@@ -1,0 +1,21 @@
+# Secretos y entorno
+.env
+.env.*
+!.env.example
+
+# Datos reales de producción
+cargaExcel/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+
+# Sistema
+.DS_Store
+Thumbs.db
