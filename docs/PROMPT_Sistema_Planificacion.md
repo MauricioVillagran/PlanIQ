@@ -44,7 +44,7 @@ El sistema es independiente de ProcessIQ, pero se construye con el mismo stack y
 | Autenticación | Usuarios propios del sistema. Contraseñas con Argon2, JWT de acceso corto + refresh token en cookie httpOnly, bloqueo por intentos fallidos, cambio de contraseña obligatorio en primer ingreso. |
 | Organización | Una empresa, multi-planta. Ninguna planta viene precargada ni escrita en el código: todas se crean desde el mantenedor de plantas. La primera en operar será **Planta Victoria Sur**, creada por el administrador como cualquier otra. Toda tabla operacional lleva `plant_id`. |
 | Asignación comercial | Propuesta por simulación, ajustada por el usuario: la simulación de grader (sección 5.11) propone el reparto por calibre y prioridad de cliente; el planificador lo corrige y el sistema valida cobertura, disponibilidad y reglas. |
-| Graders | El sistema simula y recomienda; no envía programas ni controla la grader Marel. Compara la simulación contra lo que la grader realmente clasificó (vía Innova). |
+| Graders | El sistema simula y recomienda; no envía programas ni controla la grader Marel. Compara la simulación contra lo que la grader realmente clasificó (cargas Excel pieza a pieza y, más adelante, Innova). |
 | Flujo del plan | Estados Borrador → Publicado → Cerrado, con versionado completo de cada cambio. |
 | Actualización en planta | Polling cada 1 a 5 minutos (configurable por pantalla) vía `refetchInterval` de TanStack Query. Sin WebSockets en esta versión. |
 | Fuentes de datos | Ingreso manual; cargas Excel configurables (sección 7), entre ellas la carga pieza a pieza de grader que alimenta el histórico de los centros; y réplicas de Innova (producción real, rendimientos, calibres, calidad). |
@@ -57,13 +57,13 @@ El sistema es independiente de ProcessIQ, pero se construye con el mismo stack y
 
 ## 3. Roles y permisos
 
-**Planificación**: crea y edita la cosecha del día, el plan de producción por turno, la distribución comercial y el plan de congelados. Publica y cierra el plan. Puede importar Excel.
+**Planificación**: crea y edita la cosecha del día, el plan de producción por turno, la distribución comercial y el plan de congelados. Publica y cierra el plan. Usa las tarjetas de carga Excel para las que está autorizado.
 
 **Producción / Frigorífico**: consulta el plan publicado, ve el avance real y la cobertura, registra observaciones y cumplimiento manual cuando no exista dato en réplica (por ejemplo, cajas paletizadas de un pedido). No edita el plan.
 
 **Calidad**: administra la matriz de calibrado, las reglas de degradación y las calidades. Consulta el plan.
 
-**Control de Gestión / Admin**: administra usuarios, plantas, maestros, parámetros, plantillas de importación y conexión a réplicas. Accede a todos los dashboards y a la auditoría.
+**Control de Gestión / Admin**: administra usuarios, plantas, maestros, parámetros, perfiles de carga Excel y conexión a réplicas. Accede a todos los dashboards y a la auditoría.
 
 Los permisos se modelan como permisos granulares (`plan.edit`, `plan.publish`, `rules.edit`, `masters.edit`, `users.admin`, etc.) asignados a roles, no como `if role == ...` disperso en el código. Un usuario puede tener acceso a una o varias plantas.
 
@@ -200,7 +200,7 @@ Lo que la grader realmente clasificó por puerta y por jaula o lote (piezas y ki
 
 ## 6. Flujo del plan diario y versionado
 
-**Borrador**: Planificación edita libremente. Puede crearse vacío, copiando el plan del día anterior o desde importación Excel.
+**Borrador**: Planificación edita libremente. Puede crearse vacío, copiando el plan del día anterior o, cuando exista su tarjeta, desde una carga Excel de cosecha.
 
 **Publicado**: el plan queda visible para todas las áreas. Para publicar, el sistema exige que no existan alertas bloqueantes (etiquetas faltantes, asignación mayor a disponible, rangos de calibre inválidos). Un plan publicado puede modificarse, pero cada modificación genera una nueva versión con usuario, fecha, motivo obligatorio y diferencias campo a campo, y se notifica dentro de la app a los roles afectados.
 
@@ -279,7 +279,7 @@ actual.production_actuals, actual.yields, actual.size_distribution, actual.quali
 actual.grader_gate_results, actual.grader_piece_records
 integration.sync_runs, integration.staging_*, integration.code_mappings,
 integration.import_profiles, integration.import_profile_versions, integration.import_profile_columns,
-integration.import_profile_rules, integration.import_batches, integration.import_batch_errors
+integration.import_profile_rules, integration.import_batches, integration.import_batch_errors, integration.jobs
 ```
 
 `actual.grader_piece_records` guarda cada pieza (grader, puerta, fecha-hora, peso, calidad, centro, jaula o lote, lote de carga). Por su volumen, usar **índice columnstore agrupado** de SQL Server, adecuado para millones de filas consultadas por agregación, y no aplicarle tablas temporales; su trazabilidad la da el lote de carga (`import_batch_id`).
@@ -309,27 +309,176 @@ Auditoría de toda escritura. Validación de reglas de negocio solo en el backen
 
 ---
 
-## 11. Fases de entrega
+## 11. Arquitectura del código
 
-**Fase 0 — Fundación y administración.** Monorepo (`/api`, `/web`, `/worker`, `/infra`), Docker Compose con SQL Server 2022, base de datos nueva con Alembic, autenticación propia, layout responsive con la paleta, componente reutilizable de mantenedor, y los mantenedores de usuarios, roles y permisos, plantas, turnos y parámetros. Auditoría activa desde el primer registro. Al terminar, un administrador puede entrar, crear plantas, turnos y usuarios, y asignarles roles y plantas.
+### 11.1 Estructura del repositorio
 
-**Fase 1 — Planificación de cosecha (núcleo).** Mantenedores de centros, jaulas y jaulas de acopio; plan de cosecha diario con cálculos, validaciones, orden de faena, copia del día anterior, vista semanal, estados Borrador/Publicado/Cerrado con versionado y comparador, y notificaciones internas. Al terminar, la planificación de cosecha deja de enviarse por correo.
+```
+C:\PlanIQ\
+├── api/                         # FastAPI
+│   ├── app/
+│   │   ├── main.py              # creación de la app, middlewares, routers
+│   │   ├── core/                # config (pydantic-settings), seguridad, logging, errores, dependencias
+│   │   ├── db/                  # engine, sesión, base declarativa, tipos comunes
+│   │   ├── modules/             # un paquete por módulo de negocio
+│   │   │   ├── auth/            # login, refresh, logout, cambio de contraseña
+│   │   │   ├── users/  roles/  plants/  shifts/  parameters/
+│   │   │   ├── farms/           # centros, jaulas, jaulas de acopio
+│   │   │   ├── harvest_plan/    # plan diario de cosecha, versiones, publicación
+│   │   │   ├── notifications/  audit/
+│   │   │   ├── imports/         # motor de cargas Excel
+│   │   │   ├── graders/         # graders, puertas, programas, simulación
+│   │   │   ├── rules/           # matriz de calibrado y degradación
+│   │   │   ├── production_plan/  commercial/  labels/  frozen/
+│   │   │   ├── actuals/         # datos reales (Excel e Innova)
+│   │   │   └── dashboards/
+│   │   └── domain/              # servicios puros de cálculo, sin dependencias de BD ni FastAPI
+│   │       ├── biomass.py  wfe.py  coverage.py  compliance.py
+│   │       ├── rule_engine.py
+│   │       └── grader_simulation.py
+│   ├── migrations/              # Alembic (incluye SQL explícito para tablas temporales y triggers)
+│   ├── tests/                   # unit (domain), integration (API + BD de test)
+│   └── pyproject.toml
+├── worker/                      # procesos en segundo plano (cargas Excel, sincronización Innova, recálculos)
+├── web/                         # Next.js 15
+│   ├── src/app/                 # rutas App Router, agrupadas: (auth), (app)
+│   ├── src/components/ui/       # botones, inputs, tablas, tarjetas, panel lateral, skeletons
+│   ├── src/components/maintainer/  # componente genérico de mantenedor
+│   ├── src/features/            # una carpeta por módulo (api hooks, formularios, vistas)
+│   ├── src/lib/                 # cliente API, formato chileno, fechas productivas, permisos
+│   └── e2e/                     # Playwright
+├── infra/
+│   ├── docker-compose.yml       # sqlserver, api, worker, web, proxy
+│   ├── docker-compose.dev.yml   # montajes de desarrollo (incluye cargaExcel de solo lectura)
+│   └── proxy/                   # configuración del reverse proxy (Caddy o Nginx)
+├── docs/                        # este prompt, decisiones de arquitectura (ADR), manual por rol
+├── .github/workflows/           # CI
+├── .env.example
+├── .gitignore                   # incluye cargaExcel/ y .env
+├── CLAUDE.md
+└── README.md
+```
 
-**Fase 2 — Integración Innova: real versus plan de cosecha.** Worker de sincronización con las réplicas de Innova (solo lectura), tablas de mapeo de códigos, pantalla de estado de la integración, columna real al lado de la planificada, desvíos y cumplimiento por turno y por centro, y la vista de supervisor en celular para la cosecha.
+### 11.2 Backend
 
-**Fase 3 — Plan de producción por turno.** Mantenedores de procesos y productos; plan por proceso y turno, validado contra la biomasa de la cosecha; real versus plan de producción desde Innova.
+Cada módulo sigue la misma estructura en capas: `router.py` (HTTP, validación de entrada y permisos), `schemas.py` (Pydantic), `service.py` (casos de uso y transacciones), `repository.py` (consultas SQLAlchemy) y `models.py` (tablas). Los routers no contienen lógica de negocio, y los cálculos (biomasa, WFE, cobertura, cumplimiento, motor de reglas, simulación de grader) viven en `app/domain` como funciones puras que reciben y devuelven datos simples.
 
-**Fase 4 — Reglas y graders.** Motor de cargas Excel configurables con pantalla de tarjetas, y la primera tarjeta: carga de grader pieza a pieza (se configura cuando se entregue el archivo real). Mantenedores de calidades y calibres; matriz de calibrado, motor de degradación con simulador, validador de rangos de calibre. Mantenedores de graders, puertas y programas; perfiles de distribución de peso y mezcla de calidad por centro (históricos desde Innova, con curva de respaldo); simulación pieza a pieza por puerta y producto, todavía sin clientes; hoja de grader; simulado versus real por puerta.
+Convenciones de la API: respuestas de error con un formato único (`code`, `message`, `details`, `field_errors`); paginación con `page`, `page_size`, `total`; filtros por query string; fechas productivas como `YYYY-MM-DD` y marcas de tiempo en ISO 8601 con zona; montos y pesos como string decimal en JSON para no perder precisión. La concurrencia se maneja enviando el `rowversion` en cada edición: si no coincide, la API responde 409 con los datos actuales.
 
-**Fase 5 — Comercial, etiquetas y congelados.** Mantenedores de clientes, mercados, líneas, impresoras y etiquetas; clientes y prioridades incorporados a los programas de grader; reparto por calibre y prioridad en la simulación como propuesta de distribución comercial ajustable; catálogo de etiquetas con alerta bloqueante; planificación de congelados, programación y cobertura.
+Permisos: una dependencia `require_permission("plan.publish")` y un filtro de planta que restringe toda consulta a las plantas del usuario. Ninguna consulta operacional se ejecuta sin `plant_id` validado contra el usuario.
 
-**Fase 6 — Dashboards, importación y apertura.** Dashboards completos de planificación y gestión, alertas de desvío, tarjetas de carga adicionales que se necesiten (cosecha, congelados, maestros), API `/api/v1` con API keys para ProcessIQ, PWA instalable y documentación de usuario por rol.
+Auditoría: un mecanismo central (eventos de sesión de SQLAlchemy) registra en `core.audit_log` toda inserción, modificación y desactivación con usuario, fecha, entidad, id y diferencias. Las tablas temporales complementan esto en plan y reglas.
 
-Cada fase termina con: migraciones aplicadas, tests en verde, datos de ejemplo cargables (`seed`) y una nota breve de lo entregado y lo pendiente.
+Worker: proceso Python separado con una cola de trabajos persistida en SQL Server (`integration.jobs` con estado, progreso y error), sin agregar Redis en esta versión. Ejecuta cargas Excel, sincronización con Innova y recálculo de perfiles. Reintentos acotados y trabajos idempotentes.
+
+### 11.3 Frontend
+
+App Router con dos grupos: `(auth)` para login y cambio de contraseña, y `(app)` con el layout principal. El layout tiene barra superior con selector de planta, fecha productiva y turno (estado global en la URL para que un enlace compartido abra exactamente la misma vista), navegación lateral en escritorio e inferior en celular, y campana de notificaciones.
+
+Datos con TanStack Query (claves por módulo, invalidación tras cada mutación, `refetchInterval` según parámetro en pantallas de seguimiento). Formularios con React Hook Form + Zod, reutilizando los mismos mensajes de error que devuelve la API. Los permisos del usuario llegan en la sesión y ocultan acciones no permitidas, aunque la API vuelve a validarlos siempre.
+
+El componente genérico de mantenedor recibe una definición (columnas, filtros, campos del formulario, esquema Zod, permisos) y entrega listado, búsqueda, panel de edición, desactivación, exportación a Excel e historial, en escritorio y celular.
+
+### 11.4 Infraestructura y configuración
+
+`docker-compose.yml` levanta `sqlserver` (solo en desarrollo; en producción puede ser un servidor externo), `api`, `worker`, `web` y `proxy`. Volúmenes persistentes para la base y para los archivos subidos. Toda configuración por variables de entorno documentadas en `.env.example`: cadena de conexión propia, cadena de conexión a réplicas de Innova, secretos JWT, credenciales del administrador inicial, tamaño máximo de carga, ruta de almacenamiento de archivos, intervalo de sincronización y zona horaria.
 
 ---
 
-## 12. Instrucciones para Claude Code
+## 12. API (resumen por módulo)
+
+Todas bajo `/api/v1`. Las de uso interno exigen sesión de usuario; las marcadas como externas aceptan además API key de servicio.
+
+```
+Auth           POST /auth/login · POST /auth/refresh · POST /auth/logout · POST /auth/change-password · GET /auth/me
+Admin          /users · /roles · /permissions · /plants · /plants/{id}/shifts · /parameters
+               (GET lista y detalle, POST, PATCH, POST /{id}/deactivate, POST /{id}/activate, GET /{id}/history)
+               POST /users/{id}/reset-password · POST /users/{id}/unlock
+Centros        /farm-centers · /farm-centers/{id}/cages · /plants/{id}/holding-cages
+Plan cosecha   GET  /plants/{id}/harvest-plans?from=&to=          (vista semanal)
+               GET  /plants/{id}/harvest-plans/{date}
+               POST /plants/{id}/harvest-plans/{date}              (vacío o copy_from=fecha)
+               POST|PATCH|DELETE /harvest-plans/{planId}/entries[/{entryId}]
+               PUT  /harvest-plans/{planId}/entries/order          (orden de faena)
+               GET  /harvest-plans/{planId}/summary                (totales por turno y centro)
+               POST /harvest-plans/{planId}/publish · /close        (con motivo cuando aplica)
+               GET  /harvest-plans/{planId}/versions · /versions/compare?a=&b=
+               GET  /harvest-plans/{planId}/actuals                (plan versus real)
+Notificaciones GET /notifications · POST /notifications/{id}/read · POST /notifications/read-all
+Cargas         GET /import-profiles · POST /import-profiles/analyze (archivo de ejemplo → estructura detectada)
+               POST /import-profiles · PATCH /import-profiles/{id} · POST /import-profiles/{id}/versions
+               POST /imports/uploads (inicia subida por partes) · PUT /imports/uploads/{id}/parts/{n} · POST /imports/uploads/{id}/complete
+               GET /imports/{batchId} (estado, progreso, resumen) · GET /imports/{batchId}/errors.xlsx
+               POST /imports/{batchId}/confirm · POST /imports/{batchId}/cancel · POST /imports/{batchId}/void
+Graders        /plants/{id}/graders · /graders/{id}/gates · /graders/{id}/programs · POST /programs/{id}/clone · POST /programs/{id}/validate
+               POST /harvest-plans/{planId}/simulations · GET /simulations/{id} · GET /simulations/{id}/grader-sheet
+               GET /simulations/{id}/vs-actual
+Reglas         /grading-rules · /downgrade-rules · POST /downgrade-rules/evaluate (simulador)
+Comercial      /customers · /markets · /products · /priority-templates · /harvest-plans/{planId}/allocations
+Etiquetas      /label-formats · /lines · /printers
+Congelados     /harvest-plans/{planId}/frozen-requirements · GET /harvest-plans/{planId}/coverage
+Integración    GET /integration/status · GET /integration/sync-runs · /integration/code-mappings
+Dashboards     GET /dashboards/supervisor · /dashboards/planning · /dashboards/management
+Externa        GET /external/plans/{plantCode}/{date} · /external/compliance · /external/masters/{entity}
+```
+
+La documentación OpenAPI generada por FastAPI debe quedar completa y con ejemplos; el cliente del frontend se tipa a partir de ella.
+
+---
+
+## 13. Pantallas y navegación
+
+**Acceso**: login, cambio de contraseña obligatorio en primer ingreso, recuperación por administrador.
+
+**Inicio**: según el rol. Planificación ve el plan de hoy y mañana con sus alertas; Producción y Frigorífico ven la vista de supervisor; Calidad ve reglas y simulaciones pendientes; Admin ve estado de integraciones y últimas cargas.
+
+**Planificación**: plan de cosecha del día (grilla en escritorio, tarjetas por centro en celular, totales fijos arriba, botones de publicar y cerrar), vista semanal, historial y comparador de versiones, asignación de programas de grader por turno y jaula, simulación de grader y hoja de grader, distribución comercial, congelados y cobertura.
+
+**Seguimiento**: vista supervisor, plan versus real de cosecha y producción, simulado versus real de graders, dashboards de planificación y gestión.
+
+**Cargas**: pantalla de tarjetas (una por perfil configurado, con nombre, descripción, ícono, última carga y botón "Cargar Excel"), asistente de configuración de perfiles para Admin, detalle de cada carga con progreso, resumen, errores y opción de anular.
+
+**Configuración**: mantenedores agrupados en Administración (usuarios, roles, plantas, turnos, parámetros), Cultivo (centros, jaulas, acopios), Producción (procesos, productos, calidades, calibres, graders y programas), Comercial (clientes, mercados, prioridades, etiquetas, líneas, impresoras), Reglas (calibrado y degradación con simulador) e Integración (estado, mapeos de códigos).
+
+**Comunes**: campana de notificaciones, perfil de usuario, selector de planta, fecha y turno siempre visible, auditoría para Admin.
+
+---
+
+## 14. Fases de entrega y criterios de aceptación
+
+Cada fase se trabaja en ramas `feature/` desde `develop`, se integra por pull request con el CI en verde y termina con migraciones aplicadas, tests en verde, datos ficticios cargables (`seed`), documentación actualizada en `/docs` y una nota breve de lo entregado y lo pendiente. Una fase no empieza hasta que la anterior cumple sus criterios.
+
+**Fase 0 — Fundación y administración.** Monorepo con la estructura de la sección 11, Docker Compose con SQL Server 2022, base nueva con Alembic, autenticación propia, auditoría central, layout responsive con la paleta, componente reutilizable de mantenedor y los mantenedores de usuarios, roles y permisos, plantas, turnos y parámetros. CI de GitHub Actions funcionando.
+
+Se acepta cuando: `docker compose up` levanta todo desde cero en un equipo Windows con Docker Desktop siguiendo solo el README; el administrador inicial entra, se le exige cambiar la contraseña, crea la Planta Victoria Sur con sus turnos (incluido uno que cruza medianoche), crea un usuario de cada rol y le asigna plantas; cada usuario ve solo lo que su rol permite; cinco intentos fallidos bloquean la cuenta; todo cambio aparece en el historial del registro; los mantenedores funcionan en 360 px y en escritorio.
+
+**Fase 1 — Planificación de cosecha (núcleo).** Mantenedores de centros, jaulas y jaulas de acopio; plan de cosecha diario con cálculos, validaciones, orden de faena, copia del día anterior, vista semanal, estados Borrador/Publicado/Cerrado con tablas temporales, comparador de versiones y notificaciones internas.
+
+Se acepta cuando: Planificación arma el plan de un día con varias jaulas en ambos turnos desde el celular y desde el escritorio; los totales de peces, biomasa y WFE coinciden con un cálculo manual de control; las validaciones de capacidad de acopio y de peso plausible bloquean, y la jaula repetida advierte; al publicar, los demás roles lo ven y reciben aviso; una modificación posterior exige motivo, crea versión y el comparador muestra exactamente qué cambió; dos usuarios editando a la vez reciben conflicto en vez de pisarse; un plan cerrado no se puede editar; los tests de dominio cubren biomasa, WFE y fecha productiva con turno nocturno.
+
+**Fase 2 — Real versus plan de cosecha.** Worker de sincronización con las réplicas de Innova (solo lectura), tablas de mapeo de códigos, pantalla de estado de la integración, columna real al lado de la planificada, desvíos y cumplimiento por turno y por centro, y vista de supervisor para la cosecha.
+
+Se acepta cuando: la sincronización corre sola en el intervalo configurado, es incremental e idempotente (ejecutarla dos veces no duplica datos); un código de Innova sin mapeo aparece en la pantalla de integración y no rompe la sincronización; si la réplica se cae, el sistema sigue operando y muestra la antigüedad del dato; el cumplimiento por turno respeta la fecha productiva del turno nocturno. Si la conexión a Innova aún no está disponible, esta fase se desarrolla contra una réplica simulada en Docker con la misma estructura y se valida al conectar la real.
+
+**Fase 3 — Plan de producción por turno.** Mantenedores de procesos y productos; plan por proceso y turno validado contra la biomasa de la cosecha; real versus plan de producción.
+
+Se acepta cuando: el plan por proceso alerta si excede lo cosechado considerando los factores de rendimiento; el real se muestra por turno y proceso con su desvío.
+
+**Fase 4 — Cargas, reglas y graders.** Motor de cargas Excel configurables con pantalla de tarjetas y la primera tarjeta, carga de grader pieza a pieza, configurada a partir de los archivos de `C:\PlanIQ\cargaExcel`. Mantenedores de calidades y calibres; matriz de calibrado, motor de degradación con simulador, validador de rangos. Mantenedores de graders, puertas y programas; perfiles de distribución de peso y mezcla de calidad por centro desde las cargas pieza a pieza, con curva de respaldo; simulación por puerta y producto, todavía sin clientes; hoja de grader; simulado versus real por puerta.
+
+Se acepta cuando: un archivo de ejemplo nuevo se configura como tarjeta sin tocar código; un archivo con una columna cambiada se rechaza indicando la diferencia; un archivo con filas erróneas muestra el resumen y el reporte descargable antes de confirmar; un archivo ficticio cercano a 300 MB se procesa sin agotar la memoria del worker y con progreso visible; una carga repetida se detecta como duplicada; anular una carga revierte sus registros y recalcula el histórico; una grader admite agregar una puerta 15; la simulación da el mismo resultado ante la misma entrada; el simulado versus real muestra el error por puerta con datos de una carga.
+
+**Fase 5 — Comercial, etiquetas y congelados.** Mantenedores de clientes, mercados, líneas, impresoras y etiquetas; clientes y prioridades en los programas de grader; reparto por calibre y prioridad como propuesta de distribución comercial ajustable; catálogo de etiquetas con alerta bloqueante; planificación de congelados, programación y cobertura.
+
+Se acepta cuando: la simulación indica en qué jaula se completa cada cliente y quién queda corto; el planificador ajusta la propuesta y el sistema distingue lo propuesto de lo decidido; una combinación cliente-producto sin etiqueta impide publicar; el caso de 500 cajas, 4.000 piezas requeridas y 4.500 disponibles da 112% de cobertura.
+
+**Fase 6 — Dashboards y apertura.** Dashboards completos de planificación y gestión, alertas de desvío, tarjetas de carga adicionales que se necesiten (cosecha, congelados, maestros), API externa con API keys para ProcessIQ, PWA instalable y manual de usuario por rol.
+
+Se acepta cuando: los dashboards filtran por planta, fecha y turno, exportan a Excel y cargan en menos de 3 segundos con un año de datos ficticios; una API key de prueba lee el plan publicado de una planta y no puede leer otra; el manual explica el trabajo diario de cada rol.
+
+---
+
+## 15. Instrucciones para Claude Code
 
 1. Antes de escribir código, generar el `CLAUDE.md` del proyecto a partir de este documento y proponer la estructura de carpetas. Esperar confirmación.
 2. Trabajar una fase a la vez. Al inicio de cada fase, listar las decisiones abiertas que encuentres y preguntar antes de asumir.
@@ -338,3 +487,8 @@ Cada fase termina con: migraciones aplicadas, tests en verde, datos de ejemplo c
 5. Mantener la lógica de cálculo (biomasa, WFE, cobertura, cumplimiento, motor de reglas) en servicios puros del backend, testeables sin base de datos.
 6. Toda pantalla debe probarse en 360 px y en escritorio antes de darse por terminada.
 7. Los archivos de grader pieza a pieza están en `C:\PlanIQ\cargaExcel` (sección 0). No inventar sus columnas ni escribir un lector específico: inspeccionarlos, informar la estructura y confirmar conmigo el significado de cada columna (sobre todo peso de entrada y de salida), construir el motor genérico de cargas y configurar el archivo como perfil desde la propia aplicación. Para los tests del motor, usar archivos ficticios, nunca los reales.
+8. Trabajar siempre dentro de `C:\PlanIQ` y versionar todo en https://github.com/MauricioVillagran/PlanIQ.git: una rama `feature/<fase>-<tema>` por bloque de trabajo, commits pequeños en español, push frecuente y pull request hacia `develop` al cerrar cada bloque. Antes de cada commit, verificar que no se incluyan `.env`, credenciales ni nada de `cargaExcel/`.
+9. Al terminar cada fase, revisar uno por uno sus criterios de aceptación (sección 14), informar cuáles se cumplen con la evidencia (test, captura o paso reproducible) y cuáles no, antes de proponer pasar a la siguiente.
+10. Si algo de este documento se contradice con lo que se encuentre al implementar, o una decisión resulta técnicamente mala, decirlo con el argumento y una alternativa antes de seguir; no desviarse en silencio.
+
+**Primer paso:** leer este documento completo, generar `CLAUDE.md` con las reglas permanentes del proyecto (stack, convenciones, estructura, reglas de datos y de Git), proponer el detalle de la Fase 0 como lista de tareas, y esperar mi confirmación antes de escribir código.
