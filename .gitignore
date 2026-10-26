@@ -3,19 +3,50 @@
 .env.*
 !.env.example
 
-# Datos reales de producción
+# Datos reales de producción (nunca se versionan)
 cargaExcel/
+
+# Archivos subidos y almacenamiento local de desarrollo
+storage/
+uploads/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+dist/
+build/
 
 # Node / Next.js
 node_modules/
 .next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
 
 # Sistema
 .DS_Store
 Thumbs.db
+desktop.ini
