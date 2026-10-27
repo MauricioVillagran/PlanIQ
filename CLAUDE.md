@@ -24,7 +24,7 @@ Versiones **estables vigentes, fijadas a versión exacta** en `pyproject.toml`, 
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (`Mapped[]`), Pydantic v2, pydantic-settings, Alembic |
+| Backend | Python 3.13, FastAPI, SQLAlchemy 2.1 (estilo tipado `Mapped[]`), Pydantic v2, pydantic-settings, Alembic |
 | Base de datos | SQL Server 2022 (imagen `mcr.microsoft.com/mssql/server:2022-CU<n>-ubuntu-22.04`, CU fijada), `pyodbc` + ODBC Driver 18. Base `planiq`. Réplicas Innova por conexión separada **solo lectura** |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript estricto, Tailwind CSS 4, TanStack Query, TanStack Table, React Hook Form + Zod, Apache ECharts |
 | Worker | Proceso Python separado; cola persistida en `integration.jobs` (sin Redis) |
@@ -155,11 +155,22 @@ Desde la raíz del repositorio (`C:\PlanIQ`):
 | Detener (conserva datos) | `docker compose down` |
 | Borrar también la base | `docker compose down -v` (destructivo: pedir confirmación) |
 | Regenerar `uv.lock` (sin Python local) | `docker run --rm -v "C:\PlanIQ:/w" -w /w python:3.13.18-slim-bookworm sh -c "pip install -q uv==0.13.5 && uv lock"` |
+| Tests del backend | `docker compose exec -w /workspace/api api pytest` (solo unitarios: `-m "not integration"`) |
+| Lint y formato | `docker compose exec -w /workspace api ruff check api worker/worker` · `ruff format api worker/worker` |
+| Tipos | `docker compose exec -w /workspace api mypy api/app api/tests worker/worker` |
+| Aplicar migraciones | `docker compose run --rm migrate` (también corre solo en cada `up`) |
+| Nueva migración | `docker compose exec -w /workspace/api api alembic revision --autogenerate -m "<descripción>"`; revisarla siempre a mano (tablas temporales, triggers y columnstore van con `op.execute`) |
 | QA / producción | `docker compose --env-file .env -f infra/docker-compose.yml up -d --build` |
+
+En Git Bash, anteponer `MSYS_NO_PATHCONV=1` a los comandos con `-w /workspace...` para que no convierta la ruta.
 
 - URL de desarrollo: `http://localhost:<HTTP_PORT>` (8080 por defecto); API en `/api/v1`, OpenAPI en `/api/docs`. SQL Server en `localhost,14330`.
 - Puertos 1433, 8000 y 80 están ocupados por otros proyectos en este equipo; no usarlos.
 - Con Docker Desktop + WSL, publicar puertos en `127.0.0.1` (`HTTP_BIND`): publicar en `0.0.0.0` deja `localhost` colgado por el reenvío IPv6 de WSL.
 - En desarrollo el web usa `next dev --webpack` con polling: Turbopack no detecta cambios en volúmenes montados desde Windows.
 
-_Migraciones, seed, tests y lint se agregan en F0.3 a F0.10._
+- Pruebas de integración contra `planiq_test` (la crea `db-init`): migración una vez por sesión y cada prueba dentro de una transacción que se revierte. Nunca contra `planiq`.
+- Migraciones numeradas a mano (`0001`, `0002`...), con `downgrade`. La prueba `test_migrations_match_models` falla si los modelos y las migraciones divergen.
+- Trabajos en segundo plano: encolar con `app.modules.jobs.repository.enqueue`; registrar el handler en `worker/worker/handlers.py`. `PermanentJobError` para errores que no se resuelven reintentando.
+
+_Seed, tests del frontend y CI se agregan en F0.4 a F0.10._
