@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.core.errors import AuthenticationError, PermissionDeniedError
 from app.db.session import SessionDep
+from app.modules.audit.listener import set_actor
 from app.modules.auth.security import decode_access_token
 from app.modules.users.models import User
 
@@ -87,7 +88,10 @@ def get_current_user_allow_password_change(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise AuthenticationError()
     user_id = decode_access_token(credentials.credentials, settings)
-    return load_current_user(session, user_id, settings)
+    user = load_current_user(session, user_id, settings)
+    # Las escrituras de esta solicitud quedan auditadas a nombre de este usuario.
+    set_actor(session, user.id)
+    return user
 
 
 def get_current_user(

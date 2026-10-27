@@ -11,6 +11,7 @@ from datetime import timedelta
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.db.session import get_sessionmaker
+from app.modules.audit.listener import register_audit_listeners
 from app.modules.jobs import repository
 from app.modules.jobs.runner import run_once
 from worker.handlers import HANDLERS
@@ -29,6 +30,7 @@ def _request_stop(signum: int, _frame: object) -> None:
 def main() -> None:
     settings = get_settings()
     setup_logging("worker", settings.log_level)
+    register_audit_listeners()
     signal.signal(signal.SIGTERM, _request_stop)
     signal.signal(signal.SIGINT, _request_stop)
 

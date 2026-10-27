@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.errors import AuthenticationError, BusinessRuleError, FieldError
+from app.modules.audit.listener import set_actor
 from app.modules.auth.dependencies import is_locked
 from app.modules.auth.models import RefreshToken
 from app.modules.auth.security import (
@@ -69,6 +70,7 @@ class AuthService:
                 raise AuthenticationError(self._locked_message(), code="account_locked")
             raise AuthenticationError(INVALID_CREDENTIALS, code="invalid_credentials")
 
+        set_actor(self.session, user.id)
         user.failed_login_count = 0
         user.locked_at = None
         user.last_login_at = now
@@ -146,10 +148,10 @@ class AuthService:
                 field_errors=[FieldError(field="new_password", message=m, code="policy") for m in errors],
             )
 
+        set_actor(self.session, user.id)
         user.password_hash = hash_password(new_password)
         user.must_change_password = False
         user.password_changed_at = now
-        user.updated_by = user.id
         # Cierra las demás sesiones abiertas y entrega una nueva.
         self.session.execute(
             update(RefreshToken)

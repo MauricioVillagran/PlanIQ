@@ -24,6 +24,8 @@ class JobStatus(StrEnum):
 
 class Job(IdMixin, AuditMixin, RowVersionMixin, Base):
     __tablename__ = "jobs"
+    # Cola operativa: su trazabilidad es el propio registro del trabajo, no la auditoría.
+    __audit__ = False
     __table_args__ = (
         CheckConstraint(
             "status IN ('pending', 'running', 'succeeded', 'failed', 'cancelled')", name="status"
