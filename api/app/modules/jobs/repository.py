@@ -49,6 +49,8 @@ def enqueue(
 
 
 # UPDLOCK + READPAST: varios workers pueden tomar trabajos a la vez sin tomar el mismo ni bloquearse.
+# run_after es DATETIME2(3) y SQL Server redondea al guardarlo: se compara con "ahora" redondeado igual,
+# o un trabajo recién encolado quedaría hasta 0,5 ms en el futuro.
 _CLAIM_SQL = text(
     """
     UPDATE j
@@ -64,7 +66,7 @@ _CLAIM_SQL = text(
      WHERE j.id = (
            SELECT TOP (1) id
              FROM integration.jobs WITH (UPDLOCK, READPAST, ROWLOCK)
-            WHERE status = 'pending' AND run_after <= SYSUTCDATETIME()
+            WHERE status = 'pending' AND run_after <= CAST(SYSUTCDATETIME() AS datetime2(3))
             ORDER BY priority DESC, id
      )
     """
