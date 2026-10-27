@@ -6,6 +6,9 @@
 # Datos reales de producción (nunca se versionan)
 cargaExcel/
 
+# Respaldos de la base (contienen datos de planta)
+respaldos/
+
 # Archivos subidos y almacenamiento local de desarrollo
 storage/
 uploads/
