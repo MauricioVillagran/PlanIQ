@@ -57,7 +57,11 @@ docs/       especificación, adr/, manual por rol, notas de fase
 - Reglas de negocio validadas **siempre en el backend** (fuente de verdad); Zod en el frontend es solo comodidad.
 
 ### Frontend
-- Estado global de planta, fecha productiva y turno **en la URL** (un enlace compartido abre la misma vista).
+- Estado global de planta, fecha productiva y turno **en la URL** (un enlace compartido abre la misma vista): leerlo y cambiarlo con `useAppContext()`; los enlaces internos usan `href(path)` para conservarlo.
+- Llamadas a la API solo con el cliente tipado `api` de `src/lib/api/client.ts` + `unwrap()` dentro de TanStack Query; tras cambiar endpoints, `npm run api:types`. El token de acceso vive solo en memoria (ADR 0004).
+- Colores solo con los tokens de la paleta (`bg-teal`, `text-navy`, `text-coral`...), nunca hex sueltos; cifras con la clase `num` (DM Mono). Componentes base en `src/components/ui`.
+- Formato: `formatNumber`, `formatDate`, `formatDateTime` y `parseDecimalInput` de `src/lib/format.ts`; fechas por defecto con `todayIn()` (zona de la planta, no del navegador).
+- Un módulo nuevo se agrega al menú en `src/lib/navigation.ts` con el permiso que lo habilita.
 - Componente genérico de mantenedor (`components/maintainer`) que recibe una definición (columnas, filtros, campos, esquema Zod, permisos) y entrega listado paginado del servidor, búsqueda, panel lateral (pantalla completa en celular), activar/desactivar, exportar a Excel e historial. En celular, tarjetas.
 - Los permisos ocultan acciones en la UI, pero la API los valida siempre.
 
@@ -176,6 +180,10 @@ Desde la raíz del repositorio (`C:\PlanIQ`):
 | Tipos | `docker compose exec -w /workspace api mypy api/app api/tests worker/worker` |
 | Aplicar migraciones | `docker compose run --rm migrate` (también corre solo en cada `up`) |
 | Nueva migración | `docker compose exec -w /workspace/api api alembic revision --autogenerate -m "<descripción>"`; revisarla siempre a mano (tablas temporales, triggers y columnstore van con `op.execute`) |
+| Datos ficticios de desarrollo | `docker compose exec -w /workspace/api api python -m app.seed` (usuarios `demo.*` con `DEV_SEED_PASSWORD`) |
+| Frontend: lint y tipos | `cd web && npm run lint && npm run typecheck` (Node local) |
+| Frontend: regenerar tipos de la API | `cd web && npm run api:types` (con la API arriba; `API_OPENAPI_URL` cambia el origen) |
+| Frontend: dependencias nuevas | `cd web && npm install <paquete>@<versión exacta>` y luego `docker compose up -d --build web` |
 | QA / producción | `docker compose --env-file .env -f infra/docker-compose.yml up -d --build` |
 
 En Git Bash, anteponer `MSYS_NO_PATHCONV=1` a los comandos con `-w /workspace...` para que no convierta la ruta.

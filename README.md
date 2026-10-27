@@ -24,6 +24,7 @@ Requisito: Docker Desktop con WSL2 (al menos 6 GB de memoria disponibles para Do
 
 3. Abrir http://localhost:8080 (o el puerto de `HTTP_PORT`). La página muestra si la API y la base responden. La documentación de la API está en http://localhost:8080/api/docs.
 4. El primer arranque crea el administrador con `INITIAL_ADMIN_USERNAME` e `INITIAL_ADMIN_PASSWORD` de `.env`; al primer ingreso se exige cambiar la contraseña.
+5. Opcional, para probar con datos ficticios: `docker compose exec -w /workspace/api api python -m app.seed` crea la "Planta Demo" con turnos día y noche y los usuarios `demo.admin`, `demo.planificacion`, `demo.produccion` y `demo.calidad`, con la contraseña `DEV_SEED_PASSWORD` de `.env`. Solo funciona con `APP_ENV=development`.
 
 Servicios: `sqlserver` (SQL Server 2022 Express, accesible desde SSMS en `localhost,14330`), `db-init` (crea la base `planiq`, la de pruebas `planiq_test` y su login), `migrate` (migraciones y administrador inicial), `api`, `worker`, `web` y `proxy` (Caddy). En desarrollo, la API y el web recargan solos al guardar cambios.
 
