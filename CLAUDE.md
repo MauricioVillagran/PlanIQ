@@ -184,7 +184,8 @@ Desde la raíz del repositorio (`C:\PlanIQ`):
 | Aplicar migraciones | `docker compose run --rm migrate` (también corre solo en cada `up`) |
 | Nueva migración | `docker compose exec -w /workspace/api api alembic revision --autogenerate -m "<descripción>"`; revisarla siempre a mano (tablas temporales, triggers y columnstore van con `op.execute`) |
 | Datos ficticios de desarrollo | `docker compose exec -w /workspace/api api python -m app.seed` (usuarios `demo.*` con `DEV_SEED_PASSWORD`) |
-| Frontend: lint y tipos | `cd web && npm run lint && npm run typecheck` (Node local) |
+| Frontend: lint, tipos y pruebas | `cd web && npm run lint && npm run typecheck && npm test` (Node local; Vitest) |
+| Pruebas end-to-end | `bash scripts/e2e.sh` (stack aislado `planiq-e2e` en el puerto 8090, imágenes de producción, base nueva; `--down` lo baja al terminar; otros argumentos van a Playwright, por ejemplo `-g "historial"`) |
 | Frontend: regenerar tipos de la API | `cd web && npm run api:types` (con la API arriba; `API_OPENAPI_URL` cambia el origen) |
 | Frontend: dependencias nuevas | `cd web && npm install <paquete>@<versión exacta>` y luego `docker compose up -d --build web` |
 | QA / producción | `docker compose --env-file .env -f infra/docker-compose.yml up -d --build` |
@@ -200,4 +201,6 @@ En Git Bash, anteponer `MSYS_NO_PATHCONV=1` a los comandos con `-w /workspace...
 - Migraciones numeradas a mano (`0001`, `0002`...), con `downgrade`. La prueba `test_migrations_match_models` falla si los modelos y las migraciones divergen.
 - Trabajos en segundo plano: encolar con `app.modules.jobs.repository.enqueue`; registrar el handler en `worker/worker/handlers.py`. `PermanentJobError` para errores que no se resuelven reintentando.
 
-_Seed, tests del frontend y CI se agregan en F0.4 a F0.10._
+- Compose en capas: `infra/docker-compose.yml` (común) + `docker-compose.db.yml` (SQL Server en contenedor: desarrollo, e2e y CI) + `docker-compose.dev.yml` (recarga en caliente) o `docker-compose.ci.yml` (imagen de la API con herramientas de prueba). `ENV_FILE` elige el archivo de entorno de los servicios.
+- Pruebas end-to-end en `web/e2e`: los criterios de aceptación se prueban en dos proyectos de Playwright, `escritorio` (1280 px) y `movil` (360 px), después de `primer-ingreso`. Cada proyecto crea sus propios datos (sufijo `e` o `m`). Nunca correrlas contra la base de desarrollo.
+- CI (`.github/workflows/ci.yml`): backend (ruff, mypy, pytest con SQL Server), frontend (lint, tipos, Vitest, build) y e2e en cada pull request. Un cambio no se fusiona con el CI en rojo.
