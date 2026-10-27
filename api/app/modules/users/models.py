@@ -38,6 +38,10 @@ class User(IdMixin, AuditMixin, ActiveMixin, RowVersionMixin, Base):
     roles: Mapped[list[Role]] = relationship(secondary="core.user_roles", lazy="selectin")
     plants: Mapped[list[Plant]] = relationship(secondary="core.user_plants", lazy="selectin")
 
+    @property
+    def locked(self) -> bool:
+        return self.locked_at is not None
+
 
 class UserRole(Base):
     __tablename__ = "user_roles"
