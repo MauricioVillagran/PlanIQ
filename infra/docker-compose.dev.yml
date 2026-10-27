@@ -44,23 +44,33 @@ services:
       # Docker Desktop no propaga eventos de archivos desde Windows: la recarga usa polling.
       WATCHFILES_FORCE_POLLING: "true"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/workspace/api/app"]
+    # Imagen con herramientas de desarrollo (pytest, ruff, mypy): `docker compose exec api pytest`.
+    image: planiq-api:dev
+    build:
+      args:
+        DEV_DEPS: "true"
     volumes:
-      - ../api/app:/workspace/api/app
+      - ../api:/workspace/api
+      - ../worker/worker:/workspace/worker/worker
+      - ../pyproject.toml:/workspace/pyproject.toml:ro
+
+  migrate:
+    image: planiq-api:dev
+    build:
+      args:
+        DEV_DEPS: "true"
+    volumes:
+      - ../api:/workspace/api
     depends_on:
       db-init:
         condition: service_completed_successfully
 
   worker:
-    environment:
-      SAMPLE_FILES_PATH: /data/cargaExcel
     volumes:
       - ../api/app:/workspace/api/app
       - ../worker/worker:/workspace/worker/worker
       # Archivos reales de grader: solo lectura y solo en desarrollo.
       - ../cargaExcel:/data/cargaExcel:ro
-    depends_on:
-      db-init:
-        condition: service_completed_successfully
 
   web:
     # Nombre propio para que el build de producción (target runner) no reemplace la imagen de desarrollo.

@@ -8,6 +8,16 @@
 name: planiq
 
 services:
+  # Aplica las migraciones de Alembic y termina. api y worker arrancan solo si terminó bien.
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/docker/python.Dockerfile
+      target: api
+    env_file: ../.env
+    command: ["alembic", "-c", "/workspace/api/alembic.ini", "upgrade", "head"]
+    restart: "no"
+
   api:
     build:
       context: ..
@@ -16,6 +26,9 @@ services:
     env_file: ../.env
     volumes:
       - storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   worker:
@@ -28,6 +41,9 @@ services:
       - storage:/data/storage
     # Memoria acotada: debe alcanzar para procesar un archivo del tamaño máximo (prueba de carga en la Fase 4).
     mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   web:
