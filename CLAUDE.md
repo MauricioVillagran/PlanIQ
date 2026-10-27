@@ -1,0 +1,147 @@
+# PlanIQ — Reglas permanentes del proyecto
+
+Sistema web de planificación productiva para plantas de proceso de salmón: un único plan diario versionado por planta y fecha productiva, avance real casi en línea y cumplimiento contra plan.
+
+- Especificación completa: [`docs/PROMPT_Sistema_Planificacion.md`](docs/PROMPT_Sistema_Planificacion.md). Ante cualquier duda funcional, manda ese documento.
+- Decisiones de arquitectura: `docs/adr/`. Una decisión nueva o un cambio a la especificación se registra como ADR.
+- Idioma: interfaz, documentación y commits en **español**. Código, tablas, columnas, variables y endpoints en **inglés**.
+
+---
+
+## 1. Forma de trabajar
+
+1. **Una fase a la vez** (sección 14 de la especificación). Al inicio de cada fase, listar las decisiones abiertas y preguntar antes de asumir. Una fase no empieza hasta que la anterior cumple sus criterios de aceptación.
+2. **No inventar reglas de negocio.** Si un cálculo, rango, umbral o prioridad no está definido, se deja como parámetro configurable (`master.parameters`) y se señala.
+3. **Si la especificación se contradice** con lo que aparece al implementar, o una decisión resulta técnicamente mala, decirlo con argumento y alternativa antes de seguir. Nunca desviarse en silencio.
+4. Toda pantalla se prueba en **360 px y en escritorio** antes de darse por terminada.
+5. Al cerrar una fase, revisar uno por uno los criterios de aceptación con evidencia (test, captura o paso reproducible) e informar lo que se cumple y lo que no.
+
+---
+
+## 2. Stack
+
+Versiones **estables vigentes, fijadas a versión exacta** en `pyproject.toml`, `package.json`, lockfiles e imágenes Docker. Nunca `latest` ni rangos abiertos. No hay Python instalado en el equipo de desarrollo: el backend se ejecuta y prueba dentro de Docker.
+
+| Capa | Tecnología |
+|---|---|
+| Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (`Mapped[]`), Pydantic v2, pydantic-settings, Alembic |
+| Base de datos | SQL Server 2022 (imagen `mcr.microsoft.com/mssql/server:2022-CU<n>-ubuntu-22.04`, CU fijada), `pyodbc` + ODBC Driver 18. Base `planiq`. Réplicas Innova por conexión separada **solo lectura** |
+| Frontend | Next.js 16 (App Router), React 19, TypeScript estricto, Tailwind CSS 4, TanStack Query, TanStack Table, React Hook Form + Zod, Apache ECharts |
+| Worker | Proceso Python separado; cola persistida en `integration.jobs` (sin Redis) |
+| Infra | Docker Compose: `sqlserver` (solo dev), `api`, `worker`, `web`, `proxy` (Caddy) |
+| Paquetes | `uv` (Python, con `uv.lock`) y `npm` (Node, con `package-lock.json`) |
+| Tests | pytest (dominio, motor de reglas, importación, integración API+BD) y Playwright (flujos críticos) |
+| CI | GitHub Actions: lint, type-check, tests backend y frontend, build de imágenes en cada PR |
+
+No usar Power BI. No WebSockets: seguimiento por polling (`refetchInterval`, 1–5 min, parametrizable). No app nativa: web responsive mobile-first, PWA opcional sin offline.
+
+---
+
+## 3. Estructura del repositorio
+
+```
+api/        FastAPI. app/{core,db,modules/<módulo>,domain}, migrations/, tests/
+worker/     cargas Excel, sincronización Innova, recálculos
+web/        Next.js. src/{app/(auth),app/(app),components/ui,components/maintainer,features,lib}, e2e/
+infra/      docker-compose.yml, docker-compose.dev.yml, proxy/
+docs/       especificación, adr/, manual por rol, notas de fase
+.github/workflows/
+```
+
+### Backend
+- Cada módulo: `router.py` (HTTP, validación de entrada, permisos) → `service.py` (casos de uso, transacciones) → `repository.py` (consultas) + `models.py` + `schemas.py`.
+- **Routers sin lógica de negocio.**
+- Cálculos (biomasa, WFE, cobertura, cumplimiento, fecha productiva, motor de reglas, simulación de grader) en `app/domain/` como **funciones puras**: sin BD, sin FastAPI, testeables de forma aislada.
+- Reglas de negocio validadas **siempre en el backend** (fuente de verdad); Zod en el frontend es solo comodidad.
+
+### Frontend
+- Estado global de planta, fecha productiva y turno **en la URL** (un enlace compartido abre la misma vista).
+- Componente genérico de mantenedor (`components/maintainer`) que recibe una definición (columnas, filtros, campos, esquema Zod, permisos) y entrega listado paginado del servidor, búsqueda, panel lateral (pantalla completa en celular), activar/desactivar, exportar a Excel e historial. En celular, tarjetas.
+- Los permisos ocultan acciones en la UI, pero la API los valida siempre.
+
+---
+
+## 4. Convenciones de API
+
+- Todo bajo `/api/v1`, documentado en OpenAPI con ejemplos; el cliente del frontend se tipa desde el OpenAPI.
+- El plan diario se expone como **`/daily-plans/{planId}`**, con sub-recursos (`/harvest-entries`, `/allocations`, `/frozen-requirements`, `/simulations`, `/versions`...). Creación y consulta por planta y fecha: `/plants/{id}/daily-plans/{date}`. *(Cambia las rutas `/harvest-plans` de la especificación; ver ADR.)*
+- Error único: `{ code, message, details, field_errors }`.
+- Paginación: `page`, `page_size`, `total`. Filtros por query string.
+- Fechas productivas `YYYY-MM-DD`; marcas de tiempo ISO 8601 con zona.
+- Pesos, kilos y montos como **string decimal** en JSON.
+- Concurrencia optimista: cada edición envía el `rowversion`; si no coincide → **409** con los datos actuales.
+- Permisos con la dependencia `require_permission("plan.publish")`; permisos granulares asignados a roles, nunca `if role == ...`.
+- **Ninguna consulta operacional sin `plant_id` validado contra las plantas del usuario.**
+
+---
+
+## 5. Base de datos
+
+- Esquemas: `core`, `master`, `plan`, `actual`, `integration`.
+- PK `id BIGINT IDENTITY`. `plant_id` en toda tabla operacional. Auditoría `created_at`, `created_by`, `updated_at`, `updated_by`. Borrado lógico con `is_active` cuando el registro tiene historia. Reglas con `valid_from`/`valid_to` y `version`.
+- Pesos y cantidades en `DECIMAL(10,3)` (u otra precisión `DECIMAL` justificada). **Nunca `FLOAT`** para kilos, cajas o piezas.
+- Fechas y horas almacenadas en **UTC**; se interpretan en la zona de la planta (por defecto `America/Santiago`).
+- `rowversion` en toda tabla editable.
+- **Tablas temporales (system-versioned)** en las tablas editables del plan (`plan.daily_plans`, `plan.harvest_entries`, `plan.harvest_entry_quality_mix`, `plan.grader_program_assignments`, `plan.shift_production_plans`, `plan.commercial_allocations`, `plan.frozen_requirements`) y en `master.grading_rules` y `master.downgrade_rules`. **No** llevan: `plan.grader_simulations`, `plan.grader_simulation_results` (versionadas por ejecución), `plan.notifications`, `plan.change_events`, ni `actual.*`. Definir `HISTORY_RETENTION_PERIOD`.
+- Alembic crea tablas temporales, triggers y columnstore con **SQL explícito** (`op.execute`), con su `downgrade` correspondiente.
+- `actual.grader_piece_records`: índice **columnstore agrupado**, sin tabla temporal; trazabilidad por `import_batch_id`.
+- Vistas indexadas solo cuando una medición lo justifique.
+- El diseño debe funcionar en **SQL Server Express** (dev/QA): 10 GB por base. Vigilar el crecimiento de `actual.*` y del historial temporal.
+
+### Rangos (calibre, peso, puertas de grader)
+- Todos los rangos son **semiabiertos `[min, max)`**: `min` incluido, `max` excluido. `0–1,8` y `1,8–2,8` son contiguos, sin hueco ni traslape; 1,8 pertenece al segundo. Un tramo final abierto se modela con `max` nulo ("6-Up").
+- Validación en dos capas: servicio del backend (mensaje claro) y respaldo en la BD (`CHECK (min < max)` + trigger `AFTER INSERT, UPDATE`).
+- El traslape es error **solo entre registros activos del mismo tipo de producto cuyos periodos de vigencia se cruzan**. Una versión nueva con vigencia posterior no choca con la anterior.
+- En programas de grader, que varias puertas compartan rango es **válido** (reparto de clientes).
+
+### Parámetros
+- `master.parameters` con clave, tipo, unidad, valor y vigencia. `plant_id` nulo = valor global; un valor de la planta lo reemplaza para esa planta.
+
+### Turnos y fecha productiva
+- La producción se imputa a la **fecha productiva del inicio del turno**, aunque el turno cruce medianoche.
+- Los turnos de una planta nunca se traslapan. Si el parámetro de planta de cobertura completa está activo, deben cubrir 24 h sin huecos; por defecto se permiten huecos.
+
+---
+
+## 6. Auditoría
+
+- Mecanismo central con eventos de sesión de SQLAlchemy → `core.audit_log` (usuario, fecha, entidad, id, diferencias) para toda inserción, modificación y desactivación hecha por el ORM.
+- **Excepción explícita:** las cargas masivas (staging con `fast_executemany` + `INSERT ... SELECT`) no se auditan fila a fila; se auditan **a nivel de lote** en `integration.import_batches` (usuario, fecha, archivo original, versión del perfil, filas, resultado, errores). Anular un lote es una acción auditada.
+- Las tablas temporales complementan la auditoría en plan y reglas.
+
+---
+
+## 7. Datos y seguridad
+
+- **`cargaExcel/` contiene datos reales de producción**: está en `.gitignore`, nunca se sube, nunca se usa en seeds ni tests. Para tests se generan archivos ficticios con la misma estructura y valores inventados.
+- No inventar el significado de las columnas de los archivos de grader: inspeccionarlos, informar la estructura y confirmar con el usuario (sobre todo peso de entrada/salida y unidades). El archivo se configura como **perfil de carga desde la aplicación**; no se escribe un lector específico en código.
+- Seeds siempre con datos ficticios. Ninguna planta, centro ni maestro escrito en código: todo se crea desde los mantenedores. El primer arranque solo trae el administrador inicial (credenciales por variable de entorno, cambio obligatorio al primer ingreso) y la matriz de permisos base.
+- Toda credencial por variable de entorno. Solo `.env.example` versionado; `.env` en `.gitignore`.
+- Contraseñas Argon2 (mínimo 10 caracteres); JWT de acceso de 15 min + refresh rotativo de 12 h en cookie httpOnly, revocable en BD; bloqueo tras 5 intentos fallidos, desbloqueo manual por Admin (automático solo si se activa por parámetro); rate limiting en login. Todos estos valores son configurables.
+
+---
+
+## 8. Git
+
+- Repositorio: `https://github.com/MauricioVillagran/PlanIQ.git` (`origin`). Raíz local: `C:\PlanIQ`.
+- Ramas: `main` (producción) ← `qa` ← `develop`. `main` y `qa` protegidas, solo por PR con CI en verde.
+- Trabajo diario en `feature/<fase>-<tema>` desde `develop` (ej. `feature/f0-auth`), integrado por PR hacia `develop`.
+- Commits pequeños, uno por cambio lógico, **en español**, en modo imperativo (ej. `Agrega mantenedor de plantas`).
+- **Antes de cada commit**: verificar que no se incluyan `.env`, credenciales ni nada de `cargaExcel/`.
+
+---
+
+## 9. UX
+
+- Mobile-first desde **360 px**. Navegación inferior en celular, lateral en escritorio. Nunca scroll horizontal de página.
+- Objetivos táctiles ≥ 44 px. Inputs numéricos con teclado numérico y coma decimal.
+- Formato chileno: miles con punto, decimales con coma, fechas `dd-mm-aaaa`.
+- Selector de planta, fecha productiva y turno siempre visible. Indicador de "última actualización" en pantallas con polling.
+- Skeletons al cargar; estados vacíos con acción sugerida.
+- Paleta ThemeDaaS: teal `#0096A0` (cumplimiento, acciones primarias), azul oscuro `#324664` (texto y títulos), coral `#FA6E5A` (solo alertas y desvíos), gris claro `#D2D2CD`, teal claro `#80CAD0`, coral claro `#FCB7AC`, azul medio `#6F8CB7`, fondo `#EDEDEB`, tarjetas `#FFFFFF`.
+
+---
+
+## 10. Comandos
+
+_Se completan durante la Fase 0 (levantar el entorno, migraciones, seed, tests, lint)._

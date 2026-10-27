@@ -1,0 +1,23 @@
+# Finales de línea LF en el repositorio y en la copia de trabajo:
+# los scripts y Dockerfiles se ejecutan dentro de contenedores Linux.
+* text=auto eol=lf
+
+# Scripts propios de Windows
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.pdf  binary
+*.xlsx binary
+*.xls  binary
+*.zip  binary
+*.gz   binary
+*.woff  binary
+*.woff2 binary
