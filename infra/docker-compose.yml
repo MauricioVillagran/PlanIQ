@@ -15,7 +15,7 @@ services:
       context: ..
       dockerfile: infra/docker/python.Dockerfile
       target: api
-    env_file: ../.env
+    env_file: ${ENV_FILE:-../.env}
     command: ["sh", "-c", "alembic -c /workspace/api/alembic.ini upgrade head && python -m app.bootstrap"]
     restart: "no"
 
@@ -24,7 +24,7 @@ services:
       context: ..
       dockerfile: infra/docker/python.Dockerfile
       target: api
-    env_file: ../.env
+    env_file: ${ENV_FILE:-../.env}
     volumes:
       - storage:/data/storage
     depends_on:
@@ -37,7 +37,7 @@ services:
       context: ..
       dockerfile: infra/docker/python.Dockerfile
       target: worker
-    env_file: ../.env
+    env_file: ${ENV_FILE:-../.env}
     volumes:
       - storage:/data/storage
     # Memoria acotada: debe alcanzar para procesar un archivo del tamaño máximo (prueba de carga en la Fase 4).
