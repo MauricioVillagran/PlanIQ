@@ -24,7 +24,7 @@ for arg in "$@"; do
 done
 
 if [ ! -f "$ENV_FILE" ]; then
-  rnd() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
+  rnd() { head -c 512 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c "$1"; }
   {
     APP_ENV=qa HTTP_PORT="$PORT" DB_HOST_PORT=14331 bash scripts/make-env.sh |
       sed -e "s/^AUTH_LOGIN_RATE_LIMIT=.*/AUTH_LOGIN_RATE_LIMIT=1000\/minute/"

@@ -5,7 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-rnd() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
+# Lee un bloque acotado de /dev/urandom: con lectura infinita, `tr` termina con "Broken pipe".
+rnd() { head -c 512 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c "$1"; }
 
 sed \
   -e "s/^APP_ENV=.*/APP_ENV=${APP_ENV:-development}/" \
