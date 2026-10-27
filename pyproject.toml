@@ -1,0 +1,3 @@
+# Workspace de uv: api y worker comparten un único uv.lock.
+[tool.uv.workspace]
+members = ["api", "worker"]

@@ -1,0 +1,18 @@
+[project]
+name = "planiq-api"
+version = "0.1.0"
+description = "API de PlanIQ"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi==0.162.0",
+    "uvicorn[standard]==0.54.0",
+    "pyodbc==5.3.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
+module-root = ""

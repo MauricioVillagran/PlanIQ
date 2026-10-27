@@ -43,7 +43,9 @@ No usar Power BI. No WebSockets: seguimiento por polling (`refetchInterval`, 1�
 api/        FastAPI. app/{core,db,modules/<módulo>,domain}, migrations/, tests/
 worker/     cargas Excel, sincronización Innova, recálculos
 web/        Next.js. src/{app/(auth),app/(app),components/ui,components/maintainer,features,lib}, e2e/
-infra/      docker-compose.yml, docker-compose.dev.yml, proxy/
+infra/      docker-compose.yml, docker-compose.dev.yml, docker/ (Dockerfiles), sqlserver/init/, proxy/ (Caddy)
+compose.yaml  entrada de desarrollo en la raíz (incluye los dos compose de infra/)
+pyproject.toml + uv.lock  workspace de uv con api y worker (el worker importa `app` de la API)
 docs/       especificación, adr/, manual por rol, notas de fase
 .github/workflows/
 ```
@@ -144,4 +146,20 @@ docs/       especificación, adr/, manual por rol, notas de fase
 
 ## 10. Comandos
 
-_Se completan durante la Fase 0 (levantar el entorno, migraciones, seed, tests, lint)._
+Desde la raíz del repositorio (`C:\PlanIQ`):
+
+| Acción | Comando |
+|---|---|
+| Levantar desarrollo | `docker compose up -d --build` |
+| Estado y logs | `docker compose ps` · `docker compose logs -f api` |
+| Detener (conserva datos) | `docker compose down` |
+| Borrar también la base | `docker compose down -v` (destructivo: pedir confirmación) |
+| Regenerar `uv.lock` (sin Python local) | `docker run --rm -v "C:\PlanIQ:/w" -w /w python:3.13.18-slim-bookworm sh -c "pip install -q uv==0.13.5 && uv lock"` |
+| QA / producción | `docker compose --env-file .env -f infra/docker-compose.yml up -d --build` |
+
+- URL de desarrollo: `http://localhost:<HTTP_PORT>` (8080 por defecto); API en `/api/v1`, OpenAPI en `/api/docs`. SQL Server en `localhost,14330`.
+- Puertos 1433, 8000 y 80 están ocupados por otros proyectos en este equipo; no usarlos.
+- Con Docker Desktop + WSL, publicar puertos en `127.0.0.1` (`HTTP_BIND`): publicar en `0.0.0.0` deja `localhost` colgado por el reenvío IPv6 de WSL.
+- En desarrollo el web usa `next dev --webpack` con polling: Turbopack no detecta cambios en volúmenes montados desde Windows.
+
+_Migraciones, seed, tests y lint se agregan en F0.3 a F0.10._

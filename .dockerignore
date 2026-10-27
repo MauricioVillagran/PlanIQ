@@ -1,0 +1,21 @@
+# Contexto de build de api y worker (raíz del repositorio).
+# Nunca enviar datos reales ni secretos al build.
+cargaExcel/
+.env
+.env.*
+!.env.example
+.git/
+storage/
+uploads/
+
+web/
+docs/
+infra/
+!infra/docker/
+
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/

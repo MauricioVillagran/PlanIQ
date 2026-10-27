@@ -1,0 +1,30 @@
+# Reverse proxy de PlanIQ: /api/* → api, todo lo demás → web.
+# HTTPS se agrega cuando se defina el servidor (on-premise o nube).
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode zstd gzip
+
+	# Límite de cuerpo alineado con el tamaño máximo de carga (UPLOAD_MAX_SIZE_MB).
+	request_body {
+		max_size {$UPLOAD_MAX_SIZE_MB:300}MB
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

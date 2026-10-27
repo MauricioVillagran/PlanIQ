@@ -1,0 +1,8 @@
+# Entorno de desarrollo completo. Desde la raíz del repositorio:
+#   docker compose up -d --build
+# Para producción / QA usar solo infra/docker-compose.yml (ver su encabezado).
+include:
+  - path:
+      - infra/docker-compose.yml
+      - infra/docker-compose.dev.yml
+    env_file: .env
