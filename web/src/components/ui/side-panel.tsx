@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Panel lateral para crear y editar (sección 5.1): a la derecha en escritorio, pantalla completa en
@@ -37,7 +38,8 @@ export function SidePanel({
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+  // Portal al body: un ancestro con transform (animaciones) haría que "fixed" se ubique dentro de él.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
       <button aria-label="Cerrar panel" className="absolute inset-0 bg-navy/40" onClick={onClose} tabIndex={-1} />
       <div
@@ -66,6 +68,7 @@ export function SidePanel({
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

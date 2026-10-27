@@ -4,13 +4,15 @@ import { cn } from "@/lib/cn";
 
 import { Spinner } from "./feedback";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "ghostPrimary" | "ghostDanger" | "danger";
 type Size = "md" | "sm";
 
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-teal text-white hover:bg-[#00818a] disabled:bg-teal/50",
   secondary: "bg-card text-navy border border-gray hover:border-teal hover:text-teal disabled:opacity-50",
   ghost: "text-navy hover:bg-navy/5 disabled:opacity-50",
+  ghostPrimary: "text-teal hover:bg-teal-soft disabled:opacity-50",
+  ghostDanger: "text-coral hover:bg-coral-soft disabled:opacity-50",
   // Coral se reserva para acciones destructivas o de alerta.
   danger: "bg-coral text-white hover:bg-[#e85e4b] disabled:bg-coral/50",
 };
