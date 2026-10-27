@@ -56,7 +56,9 @@ export function TemporaryPasswordDialog({
       <p>
         Entregue esta clave a <strong>{username}</strong>. Deberá cambiarla en su primer ingreso.
       </p>
-      <p className="num select-all rounded-lg bg-bg px-3 py-3 text-center text-xl tracking-wider">{password}</p>
+      <p data-testid="temporary-password" className="num select-all rounded-lg bg-bg px-3 py-3 text-center text-xl tracking-wider">
+        {password}
+      </p>
       <p className="text-coral">No se volverá a mostrar.</p>
     </Dialog>
   );
