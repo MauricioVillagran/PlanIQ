@@ -18,11 +18,14 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - Verificar que nada de `cargaExcel/` ni `.env` quede en el índice.
 
 ### F0.2 · Infraestructura — `feature/f0-infra`
-- `infra/docker-compose.yml`: `sqlserver` (2022, CU fijada, volumen persistente, ≥ 2 GB RAM, healthcheck), `api`, `worker`, `web`, `proxy`.
-- Script de inicialización que crea la base `planiq` y el usuario de aplicación (no `sa`).
-- `infra/docker-compose.dev.yml`: recarga en caliente de api/web y `C:\PlanIQ\cargaExcel` montado **solo lectura** en el worker.
-- Proxy con límite de cuerpo de 300 MB ya configurado (se usa en la Fase 4).
-- Dockerfiles multi-etapa de `api`, `worker` y `web` con versiones fijadas.
+- `infra/docker-compose.yml`: `api`, `worker`, `web`, `proxy` (base común a todos los entornos; la base de datos es externa).
+- `infra/docker-compose.dev.yml`: `sqlserver` (2022-CU27, volumen persistente, 2 GB para el motor, healthcheck, solo en `127.0.0.1:14330`), `db-init` idempotente que crea la base `planiq` y el login de aplicación (no `sa`), recarga en caliente de api/web y `C:\PlanIQ\cargaExcel` montado **solo lectura** únicamente en el worker.
+- `compose.yaml` en la raíz para que `docker compose up` levante el entorno de desarrollo completo.
+- Proxy Caddy con límite de cuerpo de 300 MB (`UPLOAD_MAX_SIZE_MB`).
+- Dockerfiles multi-etapa en `infra/docker/`: `python.Dockerfile` (targets `api` y `worker`, con ODBC Driver 18, usuario no root) y `web.Dockerfile` (targets `dev` y `runner` standalone).
+- Workspace de uv en la raíz (`pyproject.toml` + `uv.lock`) con `api` y `worker`.
+- Esqueletos mínimos para verificar la cadena completa: `/api/v1/health` y `/api/v1/health/ready` en la API, worker que se conecta y registra actividad, página provisoria del web que consulta la API. F0.3 y F0.8 los reemplazan.
+- **Pendiente de verificar en la Fase 4:** el rechazo con 413 de una subida mayor a 300 MB. Caddy aplica el límite al leer el cuerpo, y todavía no existe un endpoint que lo lea.
 
 ### F0.3 · Base del backend — `feature/f0-api-base`
 - `api/pyproject.toml` con versiones exactas y lockfile; ruff + mypy.
