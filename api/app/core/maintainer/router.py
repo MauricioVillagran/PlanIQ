@@ -162,7 +162,7 @@ def build_maintainer_router(
             },
         ),
         (
-            "/{item_id}",
+            "/{item_id:int}",
             "GET",
             _annotate(get_item, user=viewer),
             {"response_model": out, "summary": f"Detalle de {label}", "responses": _ERRORS},
@@ -179,25 +179,25 @@ def build_maintainer_router(
             },
         ),
         (
-            "/{item_id}",
+            "/{item_id:int}",
             "PATCH",
             _annotate(update_item, user=editor, body=spec.update_schema),
             {"response_model": out, "summary": f"Editar {label}", "responses": _WRITE_ERRORS},
         ),
         (
-            "/{item_id}/deactivate",
+            "/{item_id:int}/deactivate",
             "POST",
             _annotate(deactivate_item, user=editor),
             {"response_model": out, "summary": f"Desactivar {label}", "responses": _WRITE_ERRORS},
         ),
         (
-            "/{item_id}/activate",
+            "/{item_id:int}/activate",
             "POST",
             _annotate(activate_item, user=editor),
             {"response_model": out, "summary": f"Activar {label}", "responses": _WRITE_ERRORS},
         ),
         (
-            "/{item_id}/history",
+            "/{item_id:int}/history",
             "GET",
             _annotate(item_history, user=viewer),
             {
