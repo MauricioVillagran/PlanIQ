@@ -1,0 +1,20 @@
+# CI: la imagen de la API con las herramientas de prueba (pytest, ruff, mypy).
+# Uso: ver .github/workflows/ci.yml.
+
+services:
+  api:
+    image: planiq-api:ci
+    build:
+      args:
+        DEV_DEPS: "true"
+    # Código del checkout: ruff y mypy revisan también el worker, que no va en la imagen de la API.
+    volumes:
+      - ../api:/workspace/api
+      - ../worker/worker:/workspace/worker/worker
+      - ../pyproject.toml:/workspace/pyproject.toml:ro
+
+  migrate:
+    image: planiq-api:ci
+    build:
+      args:
+        DEV_DEPS: "true"
