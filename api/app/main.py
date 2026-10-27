@@ -11,6 +11,7 @@ from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.security import RateLimiter
 from app.modules.health.router import router as health_router
+from app.modules.plants.router import router as plants_router
 
 API_PREFIX = "/api/v1"
 
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     api.include_router(health_router)
     api.include_router(auth_router)
     api.include_router(audit_router)
+    api.include_router(plants_router)
     app.include_router(api)
     return app
 
