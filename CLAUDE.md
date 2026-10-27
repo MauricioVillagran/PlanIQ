@@ -62,7 +62,10 @@ docs/       especificación, adr/, manual por rol, notas de fase
 - Colores solo con los tokens de la paleta (`bg-teal`, `text-navy`, `text-coral`...), nunca hex sueltos; cifras con la clase `num` (DM Mono). Componentes base en `src/components/ui`.
 - Formato: `formatNumber`, `formatDate`, `formatDateTime` y `parseDecimalInput` de `src/lib/format.ts`; fechas por defecto con `todayIn()` (zona de la planta, no del navegador).
 - Un módulo nuevo se agrega al menú en `src/lib/navigation.ts` con el permiso que lo habilita.
-- Componente genérico de mantenedor (`components/maintainer`) que recibe una definición (columnas, filtros, campos, esquema Zod, permisos) y entrega listado paginado del servidor, búsqueda, panel lateral (pantalla completa en celular), activar/desactivar, exportar a Excel e historial. En celular, tarjetas.
+- Componente genérico de mantenedor (`components/maintainer`): una pantalla de mantenedor es `<MaintainerPage definition={...} />` con un `MaintainerDefinition` en `src/features/<módulo>/` (columnas, tarjeta para celular, filtros, formulario con React Hook Form + Zod, permisos). Entrega listado paginado del servidor, búsqueda, orden, panel lateral (pantalla completa en celular), conflicto 409 con "Cargar datos actuales", activar/desactivar, exportar a Excel e historial. Referencia: [plants.tsx](web/src/features/plants/plants.tsx).
+  - En el formulario, enviar con `submitWithApiErrors` para que los errores de la API aparezcan bajo cada campo.
+  - Campos que no cambian tras el alta (código, usuario, clave): mostrarlos como texto en edición, no como input deshabilitado.
+  - Paneles y diálogos se dibujan con portal al `body` (un ancestro con `transform` rompería `position: fixed`).
 - Los permisos ocultan acciones en la UI, pero la API los valida siempre.
 
 ---

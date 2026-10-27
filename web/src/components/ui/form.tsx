@@ -83,6 +83,31 @@ export const NumberInput = forwardRef<HTMLInputElement, InputProps & { decimals?
   );
 });
 
+/** Casilla con etiqueta, con área táctil de 44 px. */
+export const Checkbox = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & { label: ReactNode; description?: string }
+>(function Checkbox({ label, description, className, id, ...props }, ref) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  return (
+    <label
+      htmlFor={inputId}
+      className={cn(
+        "flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-navy/[0.03]",
+        props.disabled && "cursor-not-allowed opacity-60",
+        className,
+      )}
+    >
+      <input ref={ref} id={inputId} type="checkbox" className="mt-0.5 size-5 shrink-0 accent-teal" {...props} />
+      <span className="flex flex-col">
+        <span className="text-sm text-navy">{label}</span>
+        {description && <span className="text-xs text-muted">{description}</span>}
+      </span>
+    </label>
+  );
+});
+
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
   hint?: string;
