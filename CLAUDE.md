@@ -88,6 +88,8 @@ Todo mantenedor se arma con `app.core.maintainer`, nunca con endpoints escritos 
 - Un `MaintainerSpec` declara modelo, permisos de ver y editar, búsqueda, filtros, orden, campos únicos, `plant_field` y columnas de exportación; `build_maintainer_router(spec)` genera listado, detalle, alta, edición con `row_version` (409 con `details.current`), activar/desactivar, historial y `export.xlsx`.
 - Reglas propias: heredar `MaintainerService` y redefinir `apply`, `validate` o `before_set_active`; pasar la clase a `build_maintainer_router(spec, XxxService)`.
 - Un registro fuera de las plantas del usuario responde 404 (no se revela que existe).
+- Rutas propias de un mantenedor (por ejemplo `/shifts/coverage`, `/users/{id}/reset-password`) se agregan al router devuelto por la fábrica; las rutas genéricas usan `{item_id:int}` y no las tapan.
+- Parámetros de negocio: leerlos con `app.modules.parameters.values.get_parameter(session, key, plant_id)`; nunca constantes en código. Decisiones de usuarios, roles, turnos y parámetros: [ADR 0003](docs/adr/0003-mantenedores-de-administracion.md).
 
 ---
 
