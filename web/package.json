@@ -10,17 +10,30 @@
     "dev": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 3000",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "api:types": "node scripts/generate-api-types.mjs"
   },
   "dependencies": {
+    "@hookform/resolvers": "6.0.1",
+    "@tanstack/react-query": "5.105.0",
+    "lucide-react": "1.62.0",
     "next": "16.4.3",
+    "openapi-fetch": "0.17.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-hook-form": "7.91.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "typescript": "6.0.3"
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "openapi-typescript": "7.13.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
   }
 }

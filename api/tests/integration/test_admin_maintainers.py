@@ -194,6 +194,17 @@ def test_deactivated_user_loses_access_immediately(
     assert client.post("/api/v1/auth/refresh").status_code == 401
 
 
+def test_user_list_and_export_include_roles_and_plants(
+    client: TestClient, admin: Headers, make_user: Callable[..., User], make_plant: Callable[..., Plant]
+) -> None:
+    plant = make_plant("VS")
+    make_user("ana", roles=("planning",), plants=(plant,))
+    listed = _ok(client.get("/api/v1/users", params={"q": "ana"}, headers=admin))
+    assert listed["items"][0]["roles"][0]["code"] == "planning"
+    assert listed["items"][0]["plants"][0]["code"] == "VS"
+    assert client.get("/api/v1/users/export.xlsx", headers=admin).status_code == 200
+
+
 def test_users_require_users_admin(client: TestClient, make_user: Callable[..., User]) -> None:
     make_user("ana", roles=("planning",))
     headers = auth_header(login(client, "ana")["access_token"])

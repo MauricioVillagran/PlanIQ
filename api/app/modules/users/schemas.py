@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from app.core.maintainer import MaintainerOut, VersionedUpdate
 from app.core.maintainer.schemas import StrictInput
@@ -34,6 +34,8 @@ class UserUpdate(VersionedUpdate):
 
 
 class RefOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     code: str
     name: str

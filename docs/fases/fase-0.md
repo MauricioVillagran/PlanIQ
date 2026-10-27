@@ -69,7 +69,11 @@ Plan original:
 - **Parámetros**: clave, tipo, unidad, valor, vigencia; alcance global o por planta (ver decisión abierta 3).
 - `app/domain/productive_date.py`: fecha productiva según turno (incluido el nocturno), con tests; la usan turnos ahora y el plan en la Fase 1.
 
-### F0.8 · Base del frontend — `feature/f0-web-base`
+### F0.8 · Base del frontend — `feature/f0-web-base` (hecho; decisiones en [ADR 0004](../adr/0004-base-del-frontend.md))
+- Entregado: ingreso, cambio de contraseña obligatorio, sesión con refresco, layout con navegación inferior (celular) y lateral (escritorio), selector de planta/fecha/turno en la URL, campana, inicio y perfil, componentes base y formato chileno. Seed de desarrollo (`python -m app.seed`). Verificado en 360 px y escritorio.
+- Corregido al probar con datos reales del seed: el listado de usuarios fallaba con 500 cuando un usuario tenía roles o plantas.
+
+Plan original:
 - Next.js 16 + TypeScript estricto + Tailwind 4 con los tokens de la paleta; ESLint.
 - Cliente API tipado desde el OpenAPI; TanStack Query; manejo de sesión con refresh.
 - Grupos `(auth)` (login, cambio de contraseña) y `(app)` (layout con barra superior, selector de planta / fecha productiva / turno en la URL, navegación lateral en escritorio e inferior en celular, campana con contador vacío por ahora).
