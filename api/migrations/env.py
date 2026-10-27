@@ -5,7 +5,7 @@ from logging.config import fileConfig
 from alembic import context
 
 from app.core.config import get_settings
-from app.db.migration_support import compare_type
+from app.db.migration_support import compare_type, render_item
 from app.db.models import Base
 from app.db.session import build_engine
 
@@ -25,6 +25,7 @@ def run_migrations_offline() -> None:
         include_schemas=True,
         literal_binds=True,
         compare_type=compare_type,
+        render_item=render_item,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -48,6 +49,7 @@ def _run(connection: object) -> None:
         target_metadata=target_metadata,
         include_schemas=True,
         compare_type=compare_type,
+        render_item=render_item,
     )
     with context.begin_transaction():
         context.run_migrations()
