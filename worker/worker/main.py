@@ -1,45 +1,60 @@
-"""Esqueleto mínimo del worker para verificar la infraestructura (F0.2).
-
-Confirma que arranca, que llega a la base y que ve los archivos montados. La cola de trabajos
-(`integration.jobs`) llega en F0.3.
-"""
+"""Proceso worker: toma trabajos de `integration.jobs` y los ejecuta de a uno."""
 
 import logging
 import os
 import signal
+import socket
 import threading
-from pathlib import Path
+import time
+from datetime import timedelta
 
-from app.db import odbc
+from app.core.config import get_settings
+from app.core.logging import setup_logging
+from app.db.session import get_sessionmaker
+from app.modules.jobs import repository
+from app.modules.jobs.runner import run_once
+from worker.handlers import HANDLERS
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s worker %(message)s")
 logger = logging.getLogger("worker")
 
-HEARTBEAT_SECONDS = 60
+STALE_CHECK_SECONDS = 60
 _stop = threading.Event()
 
 
 def _request_stop(signum: int, _frame: object) -> None:
-    logger.info("Señal %s recibida, deteniendo", signum)
+    logger.info("Señal recibida, se detiene al terminar el trabajo en curso", extra={"signal": signum})
     _stop.set()
 
 
 def main() -> None:
+    settings = get_settings()
+    setup_logging("worker", settings.log_level)
     signal.signal(signal.SIGTERM, _request_stop)
     signal.signal(signal.SIGINT, _request_stop)
 
-    try:
-        logger.info("Conectado a SQL Server %s", odbc.ping())
-    except Exception:
-        logger.exception("No se pudo conectar a la base")
+    worker_id = f"{socket.gethostname()}:{os.getpid()}"
+    session_factory = get_sessionmaker()
+    stale_after = timedelta(minutes=settings.worker_stale_job_minutes)
+    logger.info("Worker iniciado", extra={"worker_id": worker_id, "job_types": sorted(HANDLERS)})
 
-    samples_dir = os.environ.get("SAMPLE_FILES_PATH")
-    if samples_dir and Path(samples_dir).is_dir():
-        count = sum(1 for p in Path(samples_dir).iterdir() if p.is_file())
-        logger.info("Carpeta de archivos de ejemplo montada en %s (%d archivos, solo lectura)", samples_dir, count)
+    last_stale_check = 0.0
+    while not _stop.is_set():
+        try:
+            if time.monotonic() - last_stale_check >= STALE_CHECK_SECONDS:
+                with session_factory.begin() as session:
+                    requeued = repository.requeue_stale(session, stale_after)
+                if requeued:
+                    logger.warning("Trabajos reencolados por falta de latido", extra={"count": requeued})
+                last_stale_check = time.monotonic()
 
-    while not _stop.wait(HEARTBEAT_SECONDS):
-        logger.info("Activo")
+            if not run_once(session_factory, HANDLERS, worker_id):
+                _stop.wait(settings.worker_poll_seconds)
+        except Exception:
+            # Base caída u otro error de infraestructura: se reintenta sin botar el proceso.
+            logger.exception("Error en el ciclo del worker")
+            _stop.wait(max(settings.worker_poll_seconds, 10))
+
+    logger.info("Worker detenido")
 
 
 if __name__ == "__main__":
