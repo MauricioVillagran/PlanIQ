@@ -80,7 +80,10 @@ Plan original:
 - `lib/`: formato chileno (miles con punto, coma decimal, `dd-mm-aaaa`), permisos, fechas productivas.
 - Componentes UI base: botón, input numérico con coma, tarjeta, panel lateral, skeleton, estado vacío, tabla.
 
-### F0.9 · Mantenedor genérico y pantallas — `feature/f0-maintainer-web`
+### F0.9 · Mantenedor genérico y pantallas — `feature/f0-maintainer-web` (hecho)
+- Entregado: `MaintainerPage` genérico y las pantallas de usuarios (clave temporal, restablecer, desbloquear), roles (permisos por módulo), plantas, turnos (de la planta del contexto, con cobertura de 24 h) y parámetros (alcance y vigencia). Sección Configuración en el menú. Verificado en el navegador a 360 px y en escritorio: alta, error por campo, edición, conflicto 409, historial y desactivación.
+
+Plan original:
 - `components/maintainer`: recibe una definición (columnas, filtros, campos, esquema Zod, permisos) y entrega listado, búsqueda, panel de edición (pantalla completa en celular), activar/desactivar, exportar e historial; tarjetas en 360 px.
 - Pantallas de usuarios, roles y permisos (matriz), plantas, turnos y parámetros.
 
