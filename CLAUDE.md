@@ -82,6 +82,13 @@ docs/       especificación, adr/, manual por rol, notas de fase
   - Historial de un registro para los mantenedores: `app.modules.audit.service.record_history`.
 - Decisiones de autenticación y matriz de permisos: [ADR 0002](docs/adr/0002-autenticacion-y-permisos.md).
 
+### Mantenedores (API)
+Todo mantenedor se arma con `app.core.maintainer`, nunca con endpoints escritos a mano. Referencia: [plants/router.py](api/app/modules/plants/router.py).
+- Esquemas: `XxxCreate(StrictInput)`, `XxxUpdate(VersionedUpdate)` con todos los campos opcionales, `XxxOut(MaintainerOut)`.
+- Un `MaintainerSpec` declara modelo, permisos de ver y editar, búsqueda, filtros, orden, campos únicos, `plant_field` y columnas de exportación; `build_maintainer_router(spec)` genera listado, detalle, alta, edición con `row_version` (409 con `details.current`), activar/desactivar, historial y `export.xlsx`.
+- Reglas propias: heredar `MaintainerService` y redefinir `apply`, `validate` o `before_set_active`; pasar la clase a `build_maintainer_router(spec, XxxService)`.
+- Un registro fuera de las plantas del usuario responde 404 (no se revela que existe).
+
 ---
 
 ## 5. Base de datos

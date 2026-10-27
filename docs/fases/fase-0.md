@@ -52,8 +52,10 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - Excluidos: cola de trabajos, refresh tokens, tablas de asociación (se auditan en el padre), `last_login_at` y `failed_login_count`. La contraseña se registra como cambiada, nunca su valor. El bloqueo de cuenta sí queda auditado, como acción del sistema.
 - `GET /api/v1/audit` (permiso `audit.view`) con filtros por entidad, registro, usuario, acción y fechas; respeta el acceso por planta. `record_history` queda listo para el `GET /{recurso}/{id}/history` de cada mantenedor (F0.6).
 
-### F0.6 · Patrón de mantenedor en backend — `feature/f0-maintainer-api`
-- Servicio/repositorio base: listado paginado del servidor con búsqueda y filtros, crear, `PATCH` con `rowversion` (409 si no coincide), activar/desactivar, historial, exportación a Excel, códigos únicos.
+### F0.6 · Patrón de mantenedor en backend — `feature/f0-maintainer-api` (hecho)
+- `app.core.maintainer`: especificación declarativa, servicio base con ganchos y fábrica de router. Endpoints uniformes: listado paginado con búsqueda (`q`), estado, filtros y orden; detalle; alta; `PATCH` parcial con `row_version` (409 con los datos vigentes); activar/desactivar; historial; `export.xlsx` con los mismos filtros.
+- Validaciones comunes: campos únicos (422 por campo), obligatorios que un `PATCH` no puede vaciar, campos desconocidos rechazados, espacios recortados, acceso por planta (404 fuera de alcance).
+- **Adelantado de F0.7:** el mantenedor de plantas (API) se construyó aquí como implementación de referencia y para probar el patrón.
 
 ### F0.7 · Mantenedores de administración (API) — `feature/f0-admin-api`
 - **Usuarios**: CRUD, roles, plantas, estado, último ingreso, restablecer contraseña (clave temporal), desbloquear.
