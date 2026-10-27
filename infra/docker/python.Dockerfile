@@ -42,9 +42,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # --- API -------------------------------------------------------------------------
 FROM deps AS api
+# true en desarrollo: agrega pytest, ruff y mypy (grupo dev) para correr pruebas dentro del contenedor.
+ARG DEV_DEPS=false
 COPY api/ api/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --package planiq-api \
+    if [ "$DEV_DEPS" = "true" ]; then uv sync --frozen --package planiq-api; \
+    else uv sync --frozen --no-dev --package planiq-api; fi \
  && chown -R planiq:planiq /workspace
 USER planiq
 EXPOSE 8000

@@ -1,38 +1,39 @@
-"""Esqueleto mínimo de la API para verificar la infraestructura (F0.2).
+"""Creación de la aplicación FastAPI."""
 
-F0.3 incorpora configuración, logging estructurado, formato de errores, SQLAlchemy y Alembic.
-"""
+from fastapi import APIRouter, FastAPI
 
-import logging
+from app.core.config import get_settings
+from app.core.errors import ErrorResponse, register_error_handlers
+from app.core.logging import setup_logging
+from app.core.middleware import register_middleware
+from app.modules.health.router import router as health_router
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-from app.db import odbc
-
-logger = logging.getLogger(__name__)
-
-app = FastAPI(
-    title="PlanIQ API",
-    version="0.1.0",
-    docs_url="/api/docs",
-    redoc_url=None,
-    openapi_url="/api/v1/openapi.json",
-)
+API_PREFIX = "/api/v1"
 
 
-@app.get("/api/v1/health", tags=["health"])
-def health() -> dict[str, str]:
-    """Liveness: el proceso responde. No consulta la base."""
-    return {"status": "ok"}
+def create_app() -> FastAPI:
+    settings = get_settings()
+    setup_logging("api", settings.log_level)
+
+    app = FastAPI(
+        title="PlanIQ API",
+        version="0.1.0",
+        description="API de planificación productiva de planta. Errores con formato único `ErrorResponse`.",
+        docs_url="/api/docs",
+        redoc_url=None,
+        openapi_url=f"{API_PREFIX}/openapi.json",
+        responses={
+            422: {"model": ErrorResponse, "description": "Error de validación"},
+            500: {"model": ErrorResponse, "description": "Error interno"},
+        },
+    )
+    register_middleware(app)
+    register_error_handlers(app)
+
+    api = APIRouter(prefix=API_PREFIX)
+    api.include_router(health_router)
+    app.include_router(api)
+    return app
 
 
-@app.get("/api/v1/health/ready", tags=["health"])
-def ready() -> JSONResponse:
-    """Readiness: la API puede conectarse a SQL Server."""
-    try:
-        version = odbc.ping()
-    except Exception:
-        logger.exception("No se pudo conectar a la base")
-        return JSONResponse(status_code=503, content={"status": "error", "database": "unreachable"})
-    return JSONResponse(content={"status": "ok", "database": "ok", "sqlserver_version": version})
+app = create_app()

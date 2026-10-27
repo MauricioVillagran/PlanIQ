@@ -28,12 +28,14 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - **Pendiente de verificar en la Fase 4:** el rechazo con 413 de una subida mayor a 300 MB. Caddy aplica el límite al leer el cuerpo, y todavía no existe un endpoint que lo lea.
 
 ### F0.3 · Base del backend — `feature/f0-api-base`
-- `api/pyproject.toml` con versiones exactas y lockfile; ruff + mypy.
-- `core/`: configuración (pydantic-settings), logging estructurado JSON, formato único de error (`code`, `message`, `details`, `field_errors`), manejadores de excepción, paginación común.
-- `db/`: engine `pyodbc` + ODBC Driver 18, sesión por request, base declarativa con mixins (`id`, auditoría, `is_active`, `rowversion`), tipo decimal serializado como string.
-- Alembic con creación de esquemas `core`, `master`, `plan`, `actual`, `integration`.
-- `GET /api/v1/health` (API + BD).
-- Worker mínimo: proceso que arranca, lee `integration.jobs` y no hace nada aún (deja lista la cola).
+- Dependencias con versión exacta y `uv.lock`; ruff y mypy estricto configurados en el `pyproject.toml` raíz; grupo dev (pytest, httpx2, ruff, mypy) instalado solo en la imagen de desarrollo.
+- `core/`: configuración (pydantic-settings), logging estructurado JSON con `request_id`, middleware de acceso, formato único de error (`code`, `message`, `details`, `field_errors`) con mensajes de validación en español, paginación común (`page`, `page_size`, `total`), tipo decimal serializado como string.
+- `db/`: engine `pyodbc` + ODBC Driver 18, sesión por request, base declarativa con convención de nombres, mixins (`id` BIGINT identity, auditoría, `is_active`, `rowversion` con detección de conflictos → 409), tipo `UtcDateTime`.
+- Alembic: `0001` crea los esquemas `core`, `master`, `plan`, `actual`, `integration`; `0002` crea `integration.jobs`. Servicio `migrate` en Compose que corre antes de api y worker.
+- Cola de trabajos: encolar, tomar con `UPDLOCK, READPAST` (varios workers sin choques), progreso, reintentos con espera exponencial, fallos permanentes y reencolado de trabajos sin latido. Worker con apagado ordenado y trabajo de prueba `system.noop`.
+- `GET /api/v1/health` (liveness) y `GET /api/v1/health/ready` (base y revisión del esquema).
+- Base de pruebas `planiq_test` creada por `db-init`; pruebas unitarias y de integración.
+- Desviación: SQLAlchemy 2.1 (estable vigente) en lugar de 2.0; mismo estilo tipado.
 
 ### F0.4 · Autenticación y permisos — `feature/f0-auth`
 - Tablas `core.users`, `core.roles`, `core.permissions`, `core.role_permissions`, `core.user_roles`, `core.user_plants`, `core.refresh_tokens`.

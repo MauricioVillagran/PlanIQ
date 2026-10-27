@@ -1,3 +1,32 @@
 # Workspace de uv: api y worker comparten un único uv.lock.
 [tool.uv.workspace]
 members = ["api", "worker"]
+
+# Lint y tipos para todo el código Python (api y worker).
+[tool.ruff]
+target-version = "py313"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "C4", "SIM", "RUF", "ASYNC", "PTH"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # textos en español con tildes y signos propios
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]  # assert y claves de prueba
+"**/migrations/**" = ["N999", "E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "worker"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = ["api", "worker"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["pyodbc"]
+ignore_missing_imports = true
