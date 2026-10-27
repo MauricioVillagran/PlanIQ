@@ -6,6 +6,7 @@ Cada módulo nuevo con tablas debe importarse aquí.
 from app.db.base import Base
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import RefreshToken
+from app.modules.farms.models import Cage, FarmCenter, HoldingCage
 from app.modules.jobs.models import Job
 from app.modules.parameters.models import Parameter
 from app.modules.plants.models import Plant
@@ -16,6 +17,9 @@ from app.modules.users.models import User, UserPlant, UserRole
 __all__ = [
     "AuditLog",
     "Base",
+    "Cage",
+    "FarmCenter",
+    "HoldingCage",
     "Job",
     "Parameter",
     "Permission",

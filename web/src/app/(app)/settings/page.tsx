@@ -1,6 +1,17 @@
 "use client";
 
-import { Building2, ChevronRight, Clock, ShieldCheck, SlidersHorizontal, Users, type LucideIcon } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  Clock,
+  Grid3x3,
+  MapPin,
+  ShieldCheck,
+  SlidersHorizontal,
+  Users,
+  Warehouse,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -19,6 +30,14 @@ const GROUPS: Array<{ title: string; entries: Entry[] }> = [
       { href: "/settings/plants", title: "Plantas", description: "Plantas propias y maquilas", icon: Building2, permission: "masters.view" },
       { href: "/settings/shifts", title: "Turnos", description: "Turnos por planta y cobertura del día", icon: Clock, permission: "masters.view" },
       { href: "/settings/parameters", title: "Parámetros", description: "Valores globales y por planta con vigencia", icon: SlidersHorizontal, permission: "masters.view" },
+    ],
+  },
+  {
+    title: "Cultivo",
+    entries: [
+      { href: "/settings/farm-centers", title: "Centros de cultivo", description: "Centros que despachan a planta", icon: MapPin, permission: "masters.view" },
+      { href: "/settings/cages", title: "Jaulas", description: "Jaulas de cada centro", icon: Grid3x3, permission: "masters.view" },
+      { href: "/settings/holding-cages", title: "Jaulas de acopio", description: "Acopios de la planta y su capacidad", icon: Warehouse, permission: "masters.view" },
     ],
   },
 ];
