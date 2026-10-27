@@ -1,0 +1,19 @@
+[project]
+name = "planiq-worker"
+version = "0.1.0"
+description = "Worker de PlanIQ: cargas Excel, sincronización con Innova y recálculos"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "planiq-api",
+]
+
+[tool.uv.sources]
+planiq-api = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "worker"
+module-root = ""
