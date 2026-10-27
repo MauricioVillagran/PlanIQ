@@ -17,6 +17,8 @@ type AuthContextValue = AuthState & {
   login: (username: string, password: string) => Promise<Me>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<Me>;
+  /** Vuelve a leer /auth/me (por ejemplo, tras crear una planta para que aparezca en el selector). */
+  refreshMe: () => Promise<void>;
   can: (permission: string) => boolean;
 };
 
@@ -85,16 +87,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return me;
   }, []);
 
+  const refreshMe = useCallback(async () => {
+    const me = await fetchMe();
+    setState({ status: "authenticated", me });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
       login,
       logout,
       changePassword,
+      refreshMe,
       // Solo oculta acciones en la interfaz: la API valida siempre los permisos.
       can: (permission: string) => state.me?.permissions.includes(permission) ?? false,
     }),
-    [state, login, logout, changePassword],
+    [state, login, logout, changePassword, refreshMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,0 +1,95 @@
+# CI de PlanIQ: en cada pull request y en cada push a develop, qa y main.
+# main y qa solo reciben cambios por pull request con estos checks en verde.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, qa, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend · lint, tipos y pruebas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      COMPOSE: docker compose -p ci -f infra/docker-compose.yml -f infra/docker-compose.db.yml -f infra/docker-compose.ci.yml
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Generar .env con claves aleatorias
+        run: bash scripts/make-env.sh > .env
+
+      - name: Construir la imagen de la API
+        run: $COMPOSE build api
+
+      - name: Lint, formato, tipos y pruebas (SQL Server en contenedor)
+        run: |
+          $COMPOSE run --rm -w /workspace api sh -c "
+            ruff check api worker/worker &&
+            ruff format --check api worker/worker &&
+            mypy api/app api/tests worker/worker &&
+            cd api && pytest -q -p no:logging"
+
+      - name: Logs de la base si falló
+        if: failure()
+        run: $COMPOSE logs sqlserver db-init migrate --tail 100
+
+  frontend:
+    name: Frontend · lint, tipos, pruebas y build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24.22.1"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end · Playwright 360 px y escritorio (imágenes de producción)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24.22.1"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Dependencias y navegador
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Stack aislado y pruebas
+        run: bash scripts/e2e.sh --down
+        env:
+          CI: "true"
+
+      - name: Reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7

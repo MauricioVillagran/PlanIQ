@@ -32,7 +32,7 @@ function rememberPlant(id: number): void {
 
 /** Selector de planta, fecha productiva y turno, siempre visible (sección 9). */
 export function ContextBar({ className }: { className?: string }) {
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const { plants, plant, date, shiftId, update } = useAppContext();
 
   // Sin planta en la URL: la última usada en este navegador o la primera disponible.
@@ -54,7 +54,12 @@ export function ContextBar({ className }: { className?: string }) {
   });
 
   if (plants.length === 0) {
-    return <p className={cn("text-sm text-coral", className)}>Sin plantas asignadas. Contacte al administrador.</p>;
+    // Con acceso a todas las plantas, la lista vacía significa que aún no se crea ninguna.
+    return me?.all_plants ? (
+      <p className={cn("text-sm text-muted", className)}>Aún no hay plantas creadas.</p>
+    ) : (
+      <p className={cn("text-sm text-coral", className)}>Sin plantas asignadas. Contacte al administrador.</p>
+    );
   }
 
   const today = todayIn();

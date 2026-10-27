@@ -87,7 +87,12 @@ Plan original:
 - `components/maintainer`: recibe una definición (columnas, filtros, campos, esquema Zod, permisos) y entrega listado, búsqueda, panel de edición (pantalla completa en celular), activar/desactivar, exportar e historial; tarjetas en 360 px.
 - Pantallas de usuarios, roles y permisos (matriz), plantas, turnos y parámetros.
 
-### F0.10 · Tests y CI — `feature/f0-ci`
+### F0.10 · Tests y CI — `feature/f0-ci` (hecho)
+- Playwright (`web/e2e`) con los criterios de aceptación en 360 px y escritorio contra un stack aislado con imágenes de producción (`scripts/e2e.sh`); Vitest para formato chileno, fechas y redirecciones; GitHub Actions con tres trabajos (backend, frontend, e2e).
+- SQL Server pasó a `infra/docker-compose.db.yml` para reutilizarlo en desarrollo, e2e y CI.
+- Corregido: una planta recién creada no aparecía en el selector de contexto hasta volver a ingresar.
+
+Plan original:
 - pytest: dominio (turnos, fecha productiva), auth (bloqueo, refresh, cambio obligatorio), permisos y filtro de planta, auditoría, concurrencia 409. Integración contra SQL Server en contenedor.
 - Playwright: primer ingreso con cambio de contraseña, crear planta y turnos, crear usuario por rol, bloqueo por 5 intentos; en 360 px y escritorio.
 - GitHub Actions en cada PR: ruff, mypy, ESLint, `tsc`, pytest (con SQL Server como servicio), Playwright, build de imágenes.

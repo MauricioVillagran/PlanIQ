@@ -48,6 +48,7 @@ export function MaintainerPage<T extends BaseRow>({
   baseQuery = {},
   header,
   createDisabledReason,
+  onChanged,
 }: {
   definition: MaintainerDefinition<T>;
   /** Filtros fijos (por ejemplo, la planta del contexto). */
@@ -56,6 +57,8 @@ export function MaintainerPage<T extends BaseRow>({
   header?: ReactNode;
   /** Si viene, el alta queda deshabilitada con esta explicación. */
   createDisabledReason?: string;
+  /** Después de cualquier cambio guardado (alta, edición, activación). */
+  onChanged?: () => void;
 }) {
   const { can } = useAuth();
   const toast = useToast();
@@ -87,7 +90,10 @@ export function MaintainerPage<T extends BaseRow>({
     placeholderData: keepPreviousData,
   });
 
-  const refresh = useCallback(() => queryClient.invalidateQueries({ queryKey: [resource] }), [queryClient, resource]);
+  const refresh = useCallback(async () => {
+    onChanged?.();
+    await queryClient.invalidateQueries({ queryKey: [resource] });
+  }, [queryClient, resource, onChanged]);
 
   const closePanel = useCallback(() => {
     setPanel(null);
