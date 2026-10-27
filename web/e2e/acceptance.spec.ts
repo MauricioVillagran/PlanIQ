@@ -208,15 +208,31 @@ test("sin scroll horizontal y con objetivos táctiles de 44 px", async ({ page }
   await loginAsAdmin(page);
   for (const title of ["Usuarios", "Roles y permisos", "Plantas", "Turnos", "Parámetros"]) {
     await openSettings(page, title);
+    // Medir con la página quieta: las animaciones de entrada mueven los elementos.
+    // Solo las finitas (spinners y esqueletos giran para siempre); una cancelada no es un error.
+    await page.evaluate(() =>
+      Promise.all(
+        document
+          .getAnimations()
+          .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+          .map((a) => a.finished.catch(() => undefined)),
+      ),
+    );
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, `scroll horizontal en ${title}`).toBeLessThanOrEqual(0);
     const small = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>("button, a, select, input")]
         .filter((el) => {
           const r = el.getBoundingClientRect();
-          return r.width > 0 && r.height > 0 && r.height < 44;
+          // Medio píxel de tolerancia: con densidad fraccionaria, 44 px puede medirse como 43,99.
+          return r.width > 0 && r.height > 0 && r.height < 43.5;
         })
-        .map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim() ?? el.tagName),
+        .map((el) => {
+          const name = el.getAttribute("aria-label") || el.textContent?.trim() || el.getAttribute("placeholder");
+          const type = el.getAttribute("type");
+          const height = el.getBoundingClientRect().height.toFixed(1);
+          return `${el.tagName.toLowerCase()}${type ? `[${type}]` : ""} "${name ?? ""}" ${height}px`;
+        }),
     );
     expect(small, `objetivos táctiles chicos en ${title}`).toEqual([]);
   }
