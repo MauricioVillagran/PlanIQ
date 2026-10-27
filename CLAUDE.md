@@ -76,6 +76,10 @@ docs/       especificación, adr/, manual por rol, notas de fase
 - **Ninguna consulta operacional sin `plant_id` validado contra las plantas del usuario**: `ensure_plant_access(user, plant_id)` en cada endpoint por planta; en listados, filtrar por `user.plant_ids` (None = todas, permiso `plants.all`).
 - `CurrentUserDep` bloquea a quien debe cambiar su contraseña; solo `/auth/*` usa la variante que lo permite.
 - Transacciones: el servicio confirma con `session.commit()` al terminar el caso de uso; la sesión llega por `SessionDep`.
+- Auditoría automática (`app.modules.audit.listener`): toda escritura por objetos del ORM queda en `core.audit_log` con usuario, `request_id` y diferencias campo a campo, y completa `created_by`/`updated_by`. Por eso **las escrituras de negocio se hacen con objetos del ORM, no con `update()`/`insert()` masivos** (estos no se auditan; solo se usan en tablas excluidas o en cargas auditadas por lote).
+  - Excluir un modelo: `__audit__ = False`. Excluir campos ruidosos: `__audit_exclude__`. Ocultar valores sensibles: `__audit_mask__`.
+  - Procesos sin usuario (worker, arranque) quedan como acción del sistema (`user_id` nulo). Un proceso nuevo debe llamar a `register_audit_listeners()` al iniciar.
+  - Historial de un registro para los mantenedores: `app.modules.audit.service.record_history`.
 - Decisiones de autenticación y matriz de permisos: [ADR 0002](docs/adr/0002-autenticacion-y-permisos.md).
 
 ---
