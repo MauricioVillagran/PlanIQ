@@ -13,6 +13,8 @@ from app.db.types import UtcDateTime
 
 class RefreshToken(IdMixin, Base):
     __tablename__ = "refresh_tokens"
+    # Sesiones: se registran en el log de la API, no en la auditoría de datos.
+    __audit__ = False
     __table_args__ = (
         Index("ix_refresh_tokens_user_id_revoked_at", "user_id", "revoked_at"),
         {"schema": "core"},

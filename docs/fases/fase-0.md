@@ -46,9 +46,11 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - `require_permission(...)` y filtro de planta (`plant_id` validado contra `core.user_plants`).
 - Endpoints `/auth/login`, `/refresh`, `/logout`, `/change-password`, `/me` (devuelve permisos y plantas).
 
-### F0.5 · Auditoría central — `feature/f0-audit`
-- `core.audit_log` y eventos de sesión de SQLAlchemy (insert, update con diferencias campo a campo, desactivación).
-- `GET /{entidad}/{id}/history` genérico.
+### F0.5 · Auditoría central — `feature/f0-audit` (hecho)
+- `core.audit_log` (migración `0005`) y eventos de sesión de SQLAlchemy: alta con valores iniciales, modificación con diferencias campo a campo, desactivación y reactivación como acciones propias, borrado con últimos valores, cambios en relaciones (roles y plantas de un usuario, permisos de un rol) registrados en el registro padre.
+- `created_by` / `updated_by` se completan solos con el usuario de la sesión; cada entrada guarda el `request_id`.
+- Excluidos: cola de trabajos, refresh tokens, tablas de asociación (se auditan en el padre), `last_login_at` y `failed_login_count`. La contraseña se registra como cambiada, nunca su valor. El bloqueo de cuenta sí queda auditado, como acción del sistema.
+- `GET /api/v1/audit` (permiso `audit.view`) con filtros por entidad, registro, usuario, acción y fechas; respeta el acceso por planta. `record_history` queda listo para el `GET /{recurso}/{id}/history` de cada mantenedor (F0.6).
 
 ### F0.6 · Patrón de mantenedor en backend — `feature/f0-maintainer-api`
 - Servicio/repositorio base: listado paginado del servidor con búsqueda y filtros, crear, `PATCH` con `rowversion` (409 si no coincide), activar/desactivar, historial, exportación a Excel, códigos únicos.

@@ -65,7 +65,7 @@ def test_readiness_reports_database_and_schema_revision(client: TestClient) -> N
     assert res.status_code == 200
     body = res.json()
     assert body["database"] == "ok"
-    assert body["schema_revision"] == "0004"
+    assert body["schema_revision"] == "0005"
 
 
 def test_openapi_is_served(client: TestClient) -> None:

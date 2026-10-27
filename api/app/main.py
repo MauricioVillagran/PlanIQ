@@ -6,6 +6,8 @@ from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import register_middleware
+from app.modules.audit.listener import register_audit_listeners
+from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.security import RateLimiter
 from app.modules.health.router import router as health_router
@@ -16,6 +18,7 @@ API_PREFIX = "/api/v1"
 def create_app() -> FastAPI:
     settings = get_settings()
     setup_logging("api", settings.log_level)
+    register_audit_listeners()
 
     app = FastAPI(
         title="PlanIQ API",
@@ -36,6 +39,7 @@ def create_app() -> FastAPI:
     api = APIRouter(prefix=API_PREFIX)
     api.include_router(health_router)
     api.include_router(auth_router)
+    api.include_router(audit_router)
     app.include_router(api)
     return app
 

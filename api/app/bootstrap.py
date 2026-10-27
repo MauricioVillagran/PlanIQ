@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.core.logging import setup_logging
 from app.db.session import get_sessionmaker
+from app.modules.audit.listener import register_audit_listeners
 from app.modules.auth.security import hash_password
 from app.modules.auth.service import count_users, normalize_username
 from app.modules.roles.models import Role
@@ -53,6 +54,7 @@ def create_initial_admin(session: Session, settings: Settings) -> User | None:
 def main() -> int:
     settings = get_settings()
     setup_logging("bootstrap", settings.log_level)
+    register_audit_listeners()
     with get_sessionmaker()() as session:
         create_initial_admin(session, settings)
     return 0

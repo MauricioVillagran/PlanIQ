@@ -35,6 +35,8 @@ class Role(IdMixin, AuditMixin, ActiveMixin, RowVersionMixin, Base):
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
+    # Los cambios se auditan en el rol (relación `permissions`).
+    __audit__ = False
     __table_args__ = {"schema": "core"}
 
     role_id: Mapped[int] = mapped_column(

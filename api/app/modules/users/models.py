@@ -14,6 +14,10 @@ from app.modules.roles.models import Role
 
 class User(IdMixin, AuditMixin, ActiveMixin, RowVersionMixin, Base):
     __tablename__ = "users"
+    # Cada ingreso actualiza estos campos: no se auditan (el bloqueo sí, vía locked_at).
+    __audit_exclude__ = frozenset({"last_login_at", "failed_login_count"})
+    # Se registra que cambió, nunca el valor.
+    __audit_mask__ = frozenset({"password_hash"})
     __table_args__ = {"schema": "core"}
 
     # Se guardan en minúsculas: el ingreso no distingue mayúsculas.
@@ -37,6 +41,8 @@ class User(IdMixin, AuditMixin, ActiveMixin, RowVersionMixin, Base):
 
 class UserRole(Base):
     __tablename__ = "user_roles"
+    # Los cambios se auditan en el usuario (relación `roles`).
+    __audit__ = False
     __table_args__ = {"schema": "core"}
 
     user_id: Mapped[int] = mapped_column(
@@ -51,6 +57,8 @@ class UserRole(Base):
 
 class UserPlant(Base):
     __tablename__ = "user_plants"
+    # Los cambios se auditan en el usuario (relación `plants`).
+    __audit__ = False
     __table_args__ = {"schema": "core"}
 
     user_id: Mapped[int] = mapped_column(
