@@ -1,6 +1,6 @@
-# Fase 0 — Fundación y administración (propuesta de tareas)
+# Fase 0 — Fundación y administración (plan de tareas)
 
-Estado: **aprobada el 26-10-2026**, con las propuestas de las decisiones abiertas (registradas en [ADR 0001](../adr/0001-decisiones-iniciales.md)).
+Estado: **entregada el 27-10-2026**: criterios de aceptación con evidencia en la [nota de entrega](fase-0-entrega.md). Plan aprobado el 26-10-2026 con las decisiones de [ADR 0001](../adr/0001-decisiones-iniciales.md).
 
 Objetivo (sección 14 de la especificación): monorepo, Docker Compose con SQL Server 2022, base nueva con Alembic, autenticación propia, auditoría central, layout responsive con la paleta, componente reutilizable de mantenedor y mantenedores de usuarios, roles y permisos, plantas, turnos y parámetros. CI funcionando.
 
@@ -97,7 +97,10 @@ Plan original:
 - Playwright: primer ingreso con cambio de contraseña, crear planta y turnos, crear usuario por rol, bloqueo por 5 intentos; en 360 px y escritorio.
 - GitHub Actions en cada PR: ruff, mypy, ESLint, `tsc`, pytest (con SQL Server como servicio), Playwright, build de imágenes.
 
-### F0.11 · Cierre de fase — `feature/f0-docs`
+### F0.11 · Cierre de fase — `feature/f0-cierre` (hecho)
+- README final, guía de operación y respaldos ([operacion.md](../operacion.md), respaldo y restauración probados), verificación desde un clon nuevo siguiendo solo el README y [nota de entrega](fase-0-entrega.md).
+
+Plan original:
 - README para levantar todo desde cero en Windows con Docker Desktop.
 - Completar la sección "Comandos" de `CLAUDE.md`.
 - `docs/fases/fase-0-entrega.md`: criterios de aceptación con evidencia, y lo pendiente.
