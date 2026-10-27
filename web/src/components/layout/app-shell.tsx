@@ -15,7 +15,7 @@ import { ContextBar } from "./context-bar";
 
 function useNavItems() {
   const { can } = useAuth();
-  return NAV_ITEMS.filter((item) => !item.permission || can(item.permission));
+  return NAV_ITEMS.filter((item) => !item.anyPermission || item.anyPermission.some(can));
 }
 
 function isActive(pathname: string, href: string): boolean {
