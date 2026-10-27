@@ -65,7 +65,7 @@ def test_readiness_reports_database_and_schema_revision(client: TestClient) -> N
     assert res.status_code == 200
     body = res.json()
     assert body["database"] == "ok"
-    assert body["schema_revision"] == "0005"
+    assert body["schema_revision"] == _head_revision()
 
 
 def test_openapi_is_served(client: TestClient) -> None:
@@ -77,3 +77,12 @@ def test_openapi_is_served(client: TestClient) -> None:
 def test_job_model_is_registered() -> None:
     assert "integration.jobs" in Base.metadata.tables
     assert Base.metadata.tables["integration.jobs"] is Job.__table__
+
+
+def _head_revision() -> str | None:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    from tests.conftest import ALEMBIC_INI
+
+    return ScriptDirectory.from_config(Config(str(ALEMBIC_INI))).get_current_head()

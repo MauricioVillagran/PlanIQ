@@ -57,7 +57,11 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - Validaciones comunes: campos únicos (422 por campo), obligatorios que un `PATCH` no puede vaciar, campos desconocidos rechazados, espacios recortados, acceso por planta (404 fuera de alcance).
 - **Adelantado de F0.7:** el mantenedor de plantas (API) se construyó aquí como implementación de referencia y para probar el patrón.
 
-### F0.7 · Mantenedores de administración (API) — `feature/f0-admin-api`
+### F0.7 · Mantenedores de administración (API) — `feature/f0-admin-api` (hecho; decisiones en [ADR 0003](../adr/0003-mantenedores-de-administracion.md))
+- Entregado: usuarios (clave temporal, restablecer, desbloquear, protección del último administrador), roles y catálogo de permisos, turnos (`/shifts`, traslapes, `/shifts/coverage`), parámetros (alcance global o por planta, vigencias). Migración `0006`.
+- `app.domain.shifts`: cruce de medianoche, traslapes, huecos y fecha productiva, con pruebas del turno nocturno en horario de verano e invierno.
+
+Plan original:
 - **Usuarios**: CRUD, roles, plantas, estado, último ingreso, restablecer contraseña (clave temporal), desbloquear.
 - **Roles y permisos**: matriz editable, roles nuevos.
 - **Plantas**: código, nombre, tipo (propia/maquila), ubicación, zona horaria (por defecto `America/Santiago`), activa. Ninguna planta precargada.
