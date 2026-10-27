@@ -20,7 +20,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      COMPOSE: docker compose -p ci -f infra/docker-compose.yml -f infra/docker-compose.db.yml -f infra/docker-compose.ci.yml
+      # --env-file: sin él, Compose busca el .env junto al primer archivo (infra/), no en la raíz.
+      COMPOSE: docker compose -p ci --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.db.yml -f infra/docker-compose.ci.yml
     steps:
       - uses: actions/checkout@v7.0.1
 
