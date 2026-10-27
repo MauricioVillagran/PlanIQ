@@ -16,6 +16,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "S105", "S106"]  # assert y claves de prueba
 "**/migrations/**" = ["N999", "E501"]
+"**/models.py" = ["RUF012"]  # __table_args__ = {"schema": ...} es la forma idiomática de SQLAlchemy
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "worker"]

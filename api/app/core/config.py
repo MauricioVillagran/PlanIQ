@@ -30,9 +30,32 @@ class Settings(BaseSettings):
     worker_poll_seconds: float = Field(default=2.0, gt=0)
     worker_stale_job_minutes: int = Field(default=15, ge=1)
 
+    jwt_secret: SecretStr = Field(min_length=32)
+    jwt_access_ttl_minutes: int = Field(default=15, ge=1)
+    jwt_refresh_ttl_hours: int = Field(default=12, ge=1)
+    auth_max_failed_attempts: int = Field(default=5, ge=1)
+    # 0 = la cuenta bloqueada solo la desbloquea un administrador.
+    auth_auto_unlock_minutes: int = Field(default=0, ge=0)
+    auth_password_min_length: int = Field(default=10, ge=8)
+    # Formato "<cantidad>/<second|minute|hour>", por IP.
+    auth_login_rate_limit: str = Field(default="10/minute", pattern=r"^\d+/(second|minute|hour)$")
+    # Vacío = Secure solo fuera de desarrollo y pruebas. Forzar false si QA corre sin HTTPS.
+    auth_cookie_secure: bool | None = None
+
+    initial_admin_username: str | None = None
+    initial_admin_email: str | None = None
+    initial_admin_password: SecretStr | None = None
+
     @property
     def is_development(self) -> bool:
         return self.app_env == "development"
+
+    @property
+    def secure_cookies(self) -> bool:
+        """Cookies solo por HTTPS fuera de desarrollo y pruebas, salvo que se indique lo contrario."""
+        if self.auth_cookie_secure is not None:
+            return self.auth_cookie_secure
+        return self.app_env not in {"development", "test"}
 
 
 @lru_cache
