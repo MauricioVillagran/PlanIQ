@@ -1,0 +1,63 @@
+# Servicios de PlanIQ comunes a todos los entornos.
+# La base de datos es externa: en desarrollo la agrega docker-compose.dev.yml.
+#
+# Producción / QA (desde la raíz del repositorio):
+#   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+# Desarrollo: ver compose.yaml en la raíz.
+
+name: planiq
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/docker/python.Dockerfile
+      target: api
+    env_file: ../.env
+    volumes:
+      - storage:/data/storage
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/docker/python.Dockerfile
+      target: worker
+    env_file: ../.env
+    volumes:
+      - storage:/data/storage
+    # Memoria acotada: debe alcanzar para procesar un archivo del tamaño máximo (prueba de carga en la Fase 4).
+    mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../web
+      dockerfile: ../infra/docker/web.Dockerfile
+      target: runner
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2.11.7-alpine
+    environment:
+      UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-300}
+    ports:
+      - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+volumes:
+  storage:
+  caddy-data:
+  caddy-config:
