@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -11,8 +10,6 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.db.migration_support import compare_type
 from app.db.models import Base
-from app.db.session import get_session
-from app.main import create_app
 from app.modules.jobs import repository
 from app.modules.jobs.models import Job
 
@@ -63,20 +60,12 @@ def test_rowversion_is_refreshed_after_own_update(db_session: Session) -> None:
     assert job.row_version != before
 
 
-@pytest.fixture
-def client(db_session: Session) -> Iterator[TestClient]:
-    app = create_app()
-    app.dependency_overrides[get_session] = lambda: db_session
-    with TestClient(app) as c:
-        yield c
-
-
 def test_readiness_reports_database_and_schema_revision(client: TestClient) -> None:
     res = client.get("/api/v1/health/ready")
     assert res.status_code == 200
     body = res.json()
     assert body["database"] == "ok"
-    assert body["schema_revision"] == "0002"
+    assert body["schema_revision"] == "0004"
 
 
 def test_openapi_is_served(client: TestClient) -> None:
