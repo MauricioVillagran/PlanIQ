@@ -37,7 +37,8 @@ Cada bloque es una rama `feature/f0-<tema>` desde `develop`, cerrada con PR.
 - Base de pruebas `planiq_test` creada por `db-init`; pruebas unitarias y de integración.
 - Desviación: SQLAlchemy 2.1 (estable vigente) en lugar de 2.0; mismo estilo tipado.
 
-### F0.4 · Autenticación y permisos — `feature/f0-auth`
+### F0.4 · Autenticación y permisos — `feature/f0-auth` (hecho; decisiones en [ADR 0002](../adr/0002-autenticacion-y-permisos.md))
+- Además de lo previsto: se crea `master.plants` (la necesita `core.user_plants`) y el permiso `plants.all`.
 - Tablas `core.users`, `core.roles`, `core.permissions`, `core.role_permissions`, `core.user_roles`, `core.user_plants`, `core.refresh_tokens`.
 - Argon2, JWT de acceso corto, refresh rotativo en cookie httpOnly (revocable en BD), logout.
 - Bloqueo tras 5 intentos fallidos, rate limiting en login, cambio de contraseña obligatorio en primer ingreso y tras restablecimiento.

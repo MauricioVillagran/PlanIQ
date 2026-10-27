@@ -72,8 +72,11 @@ docs/       especificación, adr/, manual por rol, notas de fase
 - Fechas productivas `YYYY-MM-DD`; marcas de tiempo ISO 8601 con zona.
 - Pesos, kilos y montos como **string decimal** en JSON.
 - Concurrencia optimista: cada edición envía el `rowversion`; si no coincide → **409** con los datos actuales.
-- Permisos con la dependencia `require_permission("plan.publish")`; permisos granulares asignados a roles, nunca `if role == ...`.
-- **Ninguna consulta operacional sin `plant_id` validado contra las plantas del usuario.**
+- Permisos con la dependencia `require_permission("plan.publish")` (`app.modules.auth.dependencies`); permisos granulares asignados a roles, nunca `if role == ...`. Un permiso nuevo se agrega con una migración que lo inserta en `core.permissions` y lo asigna a los roles base que correspondan.
+- **Ninguna consulta operacional sin `plant_id` validado contra las plantas del usuario**: `ensure_plant_access(user, plant_id)` en cada endpoint por planta; en listados, filtrar por `user.plant_ids` (None = todas, permiso `plants.all`).
+- `CurrentUserDep` bloquea a quien debe cambiar su contraseña; solo `/auth/*` usa la variante que lo permite.
+- Transacciones: el servicio confirma con `session.commit()` al terminar el caso de uso; la sesión llega por `SessionDep`.
+- Decisiones de autenticación y matriz de permisos: [ADR 0002](docs/adr/0002-autenticacion-y-permisos.md).
 
 ---
 
