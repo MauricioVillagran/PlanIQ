@@ -21,8 +21,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
 from app.db.session import build_engine
+from app.modules.audit.listener import register_audit_listeners
 
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
+
+# Igual que en la API y el worker: toda escritura del ORM queda auditada.
+register_audit_listeners()
 
 
 @pytest.fixture(scope="session")
