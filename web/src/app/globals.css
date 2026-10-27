@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/*
+ * Paleta ThemeDaaS (sección 2 de la especificación).
+ * teal = cumplimiento y acciones primarias; coral = solo alertas y desvíos.
+ */
+@theme {
+  --color-teal: #0096a0;
+  --color-teal-light: #80cad0;
+  --color-teal-soft: #e0f5f5;
+  --color-navy: #324664;
+  --color-blue-mid: #6f8cb7;
+  --color-coral: #fa6e5a;
+  --color-coral-light: #fcb7ac;
+  --color-coral-soft: #fdecea;
+  --color-gray: #d2d2cd;
+  --color-bg: #ededeb;
+  --color-card: #ffffff;
+  --color-text: #324664;
+  --color-muted: #6f8cb7;
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+
+  --shadow-card: 0 2px 8px rgb(50 70 100 / 0.08);
+  --radius-card: 12px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+  }
+
+  /* Objetivos táctiles de al menos 44 px (sección 9). */
+  button,
+  [role="button"],
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    min-height: 44px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+}
+
+@utility num {
+  /* Cifras: DM Mono y dígitos tabulares para que las columnas alineen. */
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.3s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
