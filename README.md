@@ -23,8 +23,9 @@ Requisito: Docker Desktop con WSL2 (al menos 6 GB de memoria disponibles para Do
    ```
 
 3. Abrir http://localhost:8080 (o el puerto de `HTTP_PORT`). La página muestra si la API y la base responden. La documentación de la API está en http://localhost:8080/api/docs.
+4. El primer arranque crea el administrador con `INITIAL_ADMIN_USERNAME` e `INITIAL_ADMIN_PASSWORD` de `.env`; al primer ingreso se exige cambiar la contraseña.
 
-Servicios: `sqlserver` (SQL Server 2022 Express, accesible desde SSMS en `localhost,14330`), `db-init` (crea la base `planiq` y su login), `api`, `worker`, `web` y `proxy` (Caddy). En desarrollo, la API y el web recargan solos al guardar cambios.
+Servicios: `sqlserver` (SQL Server 2022 Express, accesible desde SSMS en `localhost,14330`), `db-init` (crea la base `planiq`, la de pruebas `planiq_test` y su login), `migrate` (migraciones y administrador inicial), `api`, `worker`, `web` y `proxy` (Caddy). En desarrollo, la API y el web recargan solos al guardar cambios.
 
 Para QA o producción, con la base en un servidor externo: `docker compose --env-file .env -f infra/docker-compose.yml up -d --build`.
 

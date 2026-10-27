@@ -17,7 +17,8 @@ class IdMixin:
 class AuditMixin:
     """Quién y cuándo creó y modificó el registro.
 
-    Las FK a `core.users` se agregan junto con la tabla de usuarios.
+    `created_by` y `updated_by` son ids de `core.users` sin FK, para no acoplar cada tabla
+    a la de usuarios; los usuarios nunca se borran (solo se desactivan).
     """
 
     created_at: Mapped[datetime] = mapped_column(

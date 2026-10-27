@@ -87,7 +87,9 @@ def test_failed_job_is_retried_later_then_marked_failed(
     assert job.error == "RuntimeError: archivo ilegible"
 
     # Se adelanta el reintento para no esperar.
-    db_session.execute(update(Job).where(Job.id == job_id).values(run_after=datetime.now(UTC)))
+    db_session.execute(
+        update(Job).where(Job.id == job_id).values(run_after=datetime.now(UTC) - timedelta(seconds=5))
+    )
     db_session.commit()
     run_once(session_factory, {"boom": boom}, WORKER)
 

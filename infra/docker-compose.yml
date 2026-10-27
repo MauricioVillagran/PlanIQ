@@ -8,14 +8,15 @@
 name: planiq
 
 services:
-  # Aplica las migraciones de Alembic y termina. api y worker arrancan solo si terminó bien.
+  # Aplica las migraciones, crea el administrador inicial si no hay usuarios y termina.
+  # api y worker arrancan solo si terminó bien.
   migrate:
     build:
       context: ..
       dockerfile: infra/docker/python.Dockerfile
       target: api
     env_file: ../.env
-    command: ["alembic", "-c", "/workspace/api/alembic.ini", "upgrade", "head"]
+    command: ["sh", "-c", "alembic -c /workspace/api/alembic.ini upgrade head && python -m app.bootstrap"]
     restart: "no"
 
   api:
