@@ -87,6 +87,7 @@ docs/       especificación, adr/, manual por rol, notas de fase
   - Excluir un modelo: `__audit__ = False`. Excluir campos ruidosos: `__audit_exclude__`. Ocultar valores sensibles: `__audit_mask__`.
   - Procesos sin usuario (worker, arranque) quedan como acción del sistema (`user_id` nulo). Un proceso nuevo debe llamar a `register_audit_listeners()` al iniciar.
   - Historial de un registro para los mantenedores: `app.modules.audit.service.record_history`.
+  - Pantalla Configuración › Auditoría (`audit.view`). Una tabla auditada nueva agrega su nombre en español en `app/modules/audit/labels.py` y sus nombres de campo en `FIELD_LABELS` de `web/src/features/audit/audit-page.tsx`.
 - Decisiones de autenticación y matriz de permisos: [ADR 0002](docs/adr/0002-autenticacion-y-permisos.md).
 
 ### Mantenedores (API)

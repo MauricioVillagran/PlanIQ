@@ -278,6 +278,7 @@ export function makeUsersDefinition(onCreated: (user: User) => void): Maintainer
       plants: "Plantas",
       password_hash: "Contraseña",
       must_change_password: "Debe cambiar contraseña",
+      password_changed_at: "Cambio de contraseña",
       locked_at: "Bloqueo",
       is_active: "Activo",
     },

@@ -17,7 +17,10 @@ type AuditEntry = {
   changes: Record<string, unknown>;
 };
 
-const ACTIONS: Record<string, string> = {
+// Marcas de tiempo ISO (por ejemplo password_changed_at): se muestran en hora de la planta.
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+export const ACTION_VERBS: Record<string, string> = {
   create: "Creó",
   update: "Modificó",
   deactivate: "Desactivó",
@@ -29,6 +32,7 @@ function show(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (value === true) return "Sí";
   if (value === false) return "No";
+  if (typeof value === "string" && ISO_INSTANT.test(value)) return formatDateTime(value);
   return String(value);
 }
 
@@ -57,6 +61,33 @@ function ChangeLine({ change, label }: { change: unknown; label: string }) {
       {"old" in c && " → "}
       <span>{show(c.new)}</span>
     </li>
+  );
+}
+
+/** Cambios campo a campo de una entrada de auditoría (valor anterior tachado → valor nuevo). */
+export function ChangeList({
+  changes,
+  fieldLabels = {},
+  limit,
+}: {
+  changes: Record<string, unknown>;
+  fieldLabels?: Record<string, string>;
+  /** Muestra solo los primeros campos y cuántos faltan. */
+  limit?: number;
+}) {
+  const fields = Object.entries(changes).filter(([field]) => field !== "id");
+  const shown = limit ? fields.slice(0, limit) : fields;
+  return (
+    <ul className="space-y-0.5 text-navy [overflow-wrap:anywhere]">
+      {shown.map(([field, change]) => (
+        <ChangeLine key={field} change={change} label={fieldLabels[field] ?? field} />
+      ))}
+      {shown.length < fields.length && (
+        <li className="text-muted">
+          y {fields.length - shown.length} {fields.length - shown.length === 1 ? "campo" : "campos"} más
+        </li>
+      )}
+    </ul>
   );
 }
 
@@ -92,18 +123,12 @@ export function MaintainerHistory({
         <li key={entry.id} className="rounded-lg border border-gray/80 p-3 text-sm">
           <p className="mb-1 flex flex-wrap justify-between gap-x-2 text-xs text-muted">
             <span>
-              <span className="font-semibold text-navy">{ACTIONS[entry.action] ?? entry.action}</span>{" "}
+              <span className="font-semibold text-navy">{ACTION_VERBS[entry.action] ?? entry.action}</span>{" "}
               {entry.username ?? "Sistema"}
             </span>
             <span className="num">{formatDateTime(entry.occurred_at)}</span>
           </p>
-          <ul className="space-y-0.5 break-words text-navy">
-            {Object.entries(entry.changes)
-              .filter(([field]) => field !== "id")
-              .map(([field, change]) => (
-              <ChangeLine key={field} change={change} label={fieldLabels[field] ?? field} />
-            ))}
-          </ul>
+          <ChangeList changes={entry.changes} fieldLabels={fieldLabels} />
         </li>
       ))}
     </ol>
