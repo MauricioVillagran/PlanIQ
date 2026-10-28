@@ -203,10 +203,32 @@ test("todo cambio queda en el historial del registro", async ({ page }, info) =>
   await expect(panel.getByText("Creó")).toBeVisible();
 });
 
+test("la auditoría muestra el cambio y se filtra por tabla y acción", async ({ page }, info) => {
+  await loginAsAdmin(page);
+  await openSettings(page, "Auditoría");
+  await page.getByLabel("Tabla").selectOption({ label: "Plantas" });
+  await page.getByLabel("Acción").selectOption({ label: "Modificación" });
+
+  // La fila (escritorio) o la tarjeta (celular) del cambio de ubicación del paso anterior.
+  const entries = isMobile(info) ? page.getByRole("listitem") : page.getByRole("row");
+  const entry = visible(entries.filter({ hasText: "Calbuco" }));
+  await expect(entry).toContainText("Plantas");
+  await entry.click();
+  const panel = page.getByRole("dialog");
+  await expect(panel).toContainText("Modificación");
+  await expect(panel).toContainText("Ubicación");
+  await expect(panel).toContainText("Calbuco");
+  await expect(panel).not.toContainText("Creación");
+  await panel.getByRole("button", { name: "Cerrar", exact: true }).click();
+
+  await page.getByLabel("Acción").selectOption({ label: "Creación" });
+  await expect(entries.filter({ hasText: "Calbuco", visible: true })).toHaveCount(0);
+});
+
 test("sin scroll horizontal y con objetivos táctiles de 44 px", async ({ page }, info) => {
   test.skip(!isMobile(info), "Solo en 360 px");
   await loginAsAdmin(page);
-  for (const title of ["Usuarios", "Roles y permisos", "Plantas", "Turnos", "Parámetros"]) {
+  for (const title of ["Usuarios", "Roles y permisos", "Plantas", "Turnos", "Parámetros", "Auditoría"]) {
     await openSettings(page, title);
     // Medir con la página quieta: las animaciones de entrada mueven los elementos.
     // Solo las finitas (spinners y esqueletos giran para siempre); una cancelada no es un error.
