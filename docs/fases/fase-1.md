@@ -102,7 +102,10 @@ Plan original:
 - Funciones puras en `app/domain/harvest.py`: biomasa por línea, WFE con factor (D1), totales por día, turno y centro; validaciones de capacidad (D3), peso plausible (D5) y jaula repetida; diferencias entre dos versiones.
 - Pruebas con casos de control calculados a mano, y fecha productiva con turno nocturno (reutiliza `app/domain/shifts.py`).
 
-### F1.3 · Modelo del plan y tablas temporales — `feature/f1-plan-model`
+### F1.3 · Modelo del plan y tablas temporales — `feature/f1-plan-model` (hecho)
+- Entregado: migración `0008` con `plan.daily_plans`, `plan.harvest_entries` (temporales, historial en `plan_history`, retención de 5 años) y `plan.daily_plan_versions` (cabecera con `snapshot_at`, el instante que reconstruye la versión). `repository.entries_as_of` y `version_entries` leen el plan "tal como estaba".
+
+Plan original:
 - `plan.daily_plans` (planta, fecha productiva única por planta, estado, versión vigente, publicación y cierre), `plan.harvest_entries` (centro, jaula, acopio, peces, peso promedio, turno, orden, observaciones) y `plan.daily_plan_versions` (número, usuario, motivo, fecha).
 - Versionado de sistema con SQL explícito en la migración (`SYSTEM_VERSIONING`, columnas de período ocultas para el ORM), `rowversion` y auditoría.
 - Prueba de que el historial temporal reconstruye el plan "tal como estaba" en una versión.
