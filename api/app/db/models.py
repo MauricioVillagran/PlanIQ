@@ -9,6 +9,7 @@ from app.modules.auth.models import RefreshToken
 from app.modules.daily_plans.models import DailyPlan, DailyPlanVersion, HarvestEntry
 from app.modules.farms.models import Cage, FarmCenter, HoldingCage
 from app.modules.jobs.models import Job
+from app.modules.notifications.models import ChangeEvent, Notification
 from app.modules.parameters.models import Parameter
 from app.modules.plants.models import Plant
 from app.modules.roles.models import Permission, Role, RolePermission
@@ -19,12 +20,14 @@ __all__ = [
     "AuditLog",
     "Base",
     "Cage",
+    "ChangeEvent",
     "DailyPlan",
     "DailyPlanVersion",
     "FarmCenter",
     "HarvestEntry",
     "HoldingCage",
     "Job",
+    "Notification",
     "Parameter",
     "Permission",
     "Plant",

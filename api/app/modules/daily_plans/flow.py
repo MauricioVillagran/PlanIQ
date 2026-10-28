@@ -29,6 +29,7 @@ from app.modules.daily_plans.schemas import (
     VersionOut,
 )
 from app.modules.daily_plans.service import DailyPlanService, issue_out, totals_out
+from app.modules.notifications.service import notify_plan_event
 from app.modules.users.models import User
 
 
@@ -104,6 +105,7 @@ class PlanFlowService(DailyPlanService):
         plan.published_at = datetime.now(UTC)
         plan.published_by = self.user.id
         self._new_version(plan, VersionKind.PUBLISH, None)
+        notify_plan_event(self.session, plan, "plan.published", actor_id=self.user.id)
         self.session.commit()
         return plan
 
@@ -207,6 +209,7 @@ class PlanFlowService(DailyPlanService):
                     )
                 )
         self._new_version(plan, VersionKind.CHANGE, data.reason)
+        notify_plan_event(self.session, plan, "plan.changed", actor_id=self.user.id, reason=data.reason)
         self.session.commit()
         return plan
 

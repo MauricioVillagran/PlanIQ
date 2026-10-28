@@ -129,7 +129,10 @@ Plan original:
 - `GET /daily-plans/{id}/versions` y `/versions/compare?a=&b=` sobre las tablas temporales.
 - Concurrencia: `rowversion` del plan y de cada línea (409 con los datos vigentes).
 
-### F1.6 · Notificaciones internas — `feature/f1-notifications`
+### F1.6 · Notificaciones internas — `feature/f1-notifications` (hecho)
+- Entregado: migración `0009` (`plan.change_events`, `plan.notifications`); aviso al publicar y al modificar (versión y motivo) para los usuarios activos con `plan.view` y acceso a la planta, menos el autor. `GET /notifications`, `/notifications/summary` (no leídos y `poll_seconds`, parámetro `notifications.poll_seconds`, 60 s por defecto), `POST /notifications/{id}/read` y `/read-all`. Campana con contador por polling y lista con enlace al plan.
+
+Plan original:
 - `plan.change_events` y `plan.notifications`; destinatarios según D9.
 - `GET /notifications`, `POST /notifications/{id}/read` y `/read-all`.
 - La campana muestra el contador con polling (intervalo por parámetro) y la lista con enlace al plan.
