@@ -30,6 +30,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.mixins import AuditMixin, IdMixin, RowVersionMixin
 from app.db.types import PreciseUtcDateTime, UtcDateTime
+from app.domain.harvest import biomass_kg
 from app.modules.farms.models import Cage, FarmCenter, HoldingCage
 from app.modules.shifts.models import Shift
 
@@ -101,6 +102,30 @@ class HarvestEntry(IdMixin, AuditMixin, RowVersionMixin, Base):
     cage: Mapped[Cage] = relationship(lazy="joined")
     holding_cage: Mapped[HoldingCage] = relationship(lazy="joined")
     shift: Mapped[Shift] = relationship(lazy="joined")
+
+    @property
+    def farm_center_code(self) -> str:
+        return self.farm_center.code
+
+    @property
+    def farm_center_name(self) -> str:
+        return self.farm_center.name
+
+    @property
+    def cage_code(self) -> str:
+        return self.cage.code
+
+    @property
+    def holding_cage_code(self) -> str:
+        return self.holding_cage.code
+
+    @property
+    def shift_name(self) -> str:
+        return self.shift.name
+
+    @property
+    def biomass_kg(self) -> Decimal:
+        return biomass_kg(self.fish_count, self.avg_weight_kg)
 
 
 class DailyPlanVersion(IdMixin, AuditMixin, Base):

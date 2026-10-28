@@ -110,7 +110,10 @@ Plan original:
 - Versionado de sistema con SQL explícito en la migración (`SYSTEM_VERSIONING`, columnas de período ocultas para el ORM), `rowversion` y auditoría.
 - Prueba de que el historial temporal reconstruye el plan "tal como estaba" en una versión.
 
-### F1.4 · API del plan en Borrador — `feature/f1-plan-api`
+### F1.4 · API del plan en Borrador — `feature/f1-plan-api` (hecho)
+- Entregado: `/plants/{id}/daily-plans/{fecha}` (consultar y crear, vacío o `copy_from`), `/plants/{id}/daily-plans?from=&to=` (vista semanal, máx. 31 días), `/daily-plans/{id}`, `/summary`, `/harvest-entries` (alta, edición con `row_version`, baja con `?row_version=`) y `PUT /harvest-entries/order`. Al guardar una línea bloquean solo los errores que la involucran; las advertencias vuelven en `summary.issues`. Un Borrador es invisible (404) para quien no tiene `plan.edit`.
+
+Plan original:
 - `/plants/{id}/daily-plans/{fecha}`: consultar y crear (vacío o `copy_from`); `/plants/{id}/daily-plans?from=&to=`: vista semanal.
 - `/daily-plans/{id}/harvest-entries`: alta, edición y baja de líneas con validaciones. La respuesta trae las advertencias aparte de los errores.
 - `PUT .../harvest-entries/order` (orden de faena) y `GET /daily-plans/{id}/summary` (totales y advertencias).
