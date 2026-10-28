@@ -1,11 +1,16 @@
 from collections.abc import Callable
+from datetime import timedelta
+from io import BytesIO
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.modules.audit.listener import set_actor
 from app.modules.audit.models import AuditLog
 from app.modules.jobs import repository as jobs
@@ -227,12 +232,36 @@ def test_audit_endpoint_filters_and_paginates(
     assert creates["total"] == 1
 
 
-def test_audit_endpoint_rejects_dates_without_timezone(
+def test_audit_endpoint_rejects_dates_in_other_formats(
     client: TestClient, make_user: Callable[..., User]
 ) -> None:
     make_user("jefa", roles=("admin",))
-    res = _audit(client, login(client, "jefa")["access_token"], date_from="2026-10-01T00:00:00")
+    res = _audit(client, login(client, "jefa")["access_token"], date_from="01-10-2026")
     assert res.status_code == 422
+
+
+def test_audit_date_filter_uses_local_days_inclusive(
+    client: TestClient, make_user: Callable[..., User], db_session: Session
+) -> None:
+    admin = make_user("jefa", roles=("admin",))
+    set_actor(db_session, admin.id)
+    plant = Plant(code="VS", name="Planta VS", plant_type="own")
+    db_session.add(plant)
+    db_session.commit()
+    entry = _entries(db_session, "master.plants", plant.id)[0]
+    day = entry.occurred_at.astimezone(ZoneInfo(get_settings().app_timezone)).date()
+
+    token = login(client, "jefa")["access_token"]
+    same_day = _audit(client, token, entity="master.plants", entity_id=plant.id, date_from=day, date_to=day)
+    assert same_day.json()["total"] == 1
+    before = _audit(
+        client, token, entity="master.plants", entity_id=plant.id, date_to=day - timedelta(days=1)
+    )
+    assert before.json()["total"] == 0
+    after = _audit(
+        client, token, entity="master.plants", entity_id=plant.id, date_from=day + timedelta(days=1)
+    )
+    assert after.json()["total"] == 0
 
 
 def test_audit_entries_of_other_plants_are_hidden(
@@ -256,3 +285,61 @@ def test_audit_entries_of_other_plants_are_hidden(
     plant_ids = {e["plant_id"] for e in items}
     assert own.id in plant_ids
     assert other.id not in plant_ids
+
+
+def test_audit_export_uses_same_filters_and_readable_columns(
+    client: TestClient, make_user: Callable[..., User], db_session: Session
+) -> None:
+    admin = make_user("jefa", roles=("admin",))
+    set_actor(db_session, admin.id)
+    plant = Plant(code="VS", name="Planta VS", plant_type="own")
+    db_session.add(plant)
+    db_session.commit()
+    plant.name = "Planta Victoria Sur"
+    db_session.commit()
+
+    res = client.get(
+        "/api/v1/audit/export.xlsx",
+        headers=auth_header(login(client, "jefa")["access_token"]),
+        params={"entity": "master.plants", "entity_id": plant.id, "action": "update"},
+    )
+    assert res.status_code == 200
+    assert res.headers["content-disposition"].startswith('attachment; filename="auditoria-')
+    ws = load_workbook(BytesIO(res.content)).active
+    assert ws is not None
+    rows = list(ws.iter_rows(values_only=True))
+    assert rows[0] == ("Fecha", "Usuario", "Acción", "Tabla", "Registro", "Planta", "Cambios", "Request ID")
+    assert len(rows) == 2
+    _, username, action, table, record, plant_id, changes, _ = rows[1]
+    assert (username, action, table, record, plant_id) == (
+        "jefa",
+        "Modificación",
+        "Plantas",
+        plant.id,
+        plant.id,
+    )
+    assert changes == "name: Planta VS → Planta Victoria Sur"
+
+
+def test_audit_export_requires_audit_view(client: TestClient, make_user: Callable[..., User]) -> None:
+    make_user("ana", roles=("planning",))
+    res = client.get("/api/v1/audit/export.xlsx", headers=auth_header(login(client, "ana")["access_token"]))
+    assert res.status_code == 403
+
+
+def test_audit_filter_options_list_tables_and_users(
+    client: TestClient, make_user: Callable[..., User], db_session: Session
+) -> None:
+    admin = make_user("jefa", roles=("admin",))
+    set_actor(db_session, admin.id)
+    db_session.add(Plant(code="VS", name="Planta VS", plant_type="own"))
+    db_session.commit()
+
+    token = login(client, "jefa")["access_token"]
+    entities = client.get("/api/v1/audit/entities", headers=auth_header(token)).json()
+    assert {"entity": "master.plants", "label": "Plantas"} in entities
+    users = client.get("/api/v1/audit/users", headers=auth_header(token)).json()
+    assert any(u["username"] == "jefa" for u in users)
+
+    first = _audit(client, token, entity="master.plants").json()["items"][0]
+    assert first["entity_label"] == "Plantas"

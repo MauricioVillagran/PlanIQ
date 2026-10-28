@@ -140,6 +140,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exportar la auditoría a Excel (mismos filtros del listado, máximo 50.000 filas) */
+        get: operations["export_audit_api_v1_audit_export_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tablas con registros de auditoría */
+        get: operations["list_audit_entities_api_v1_audit_entities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usuarios con registros de auditoría */
+        get: operations["list_audit_users_api_v1_audit_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -1068,6 +1119,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AuditEntityOption */
+        AuditEntityOption: {
+            /**
+             * Entity
+             * @example master.plants
+             */
+            entity: string;
+            /**
+             * Label
+             * @example Plantas
+             */
+            label: string;
+        };
         /** AuditEntryOut */
         AuditEntryOut: {
             /** Id */
@@ -1094,6 +1158,12 @@ export interface components {
              * @example master.plants
              */
             entity: string;
+            /**
+             * Entity Label
+             * @description Nombre de la tabla en español
+             * @example Plantas
+             */
+            entity_label: string;
             /** Entity Id */
             entity_id: number;
             /** Plant Id */
@@ -1112,6 +1182,15 @@ export interface components {
             };
             /** Request Id */
             request_id: string | null;
+        };
+        /** AuditUserOption */
+        AuditUserOption: {
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+            /** Full Name */
+            full_name: string;
         };
         /** CageCreate */
         CageCreate: {
@@ -2290,18 +2369,18 @@ export interface operations {
     list_audit_api_v1_audit_get: {
         parameters: {
             query?: {
-                entity?: string | null;
-                entity_id?: number | null;
-                user_id?: number | null;
-                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
-                /** @description Desde (incluido), ISO 8601 con zona */
-                date_from?: string | null;
-                /** @description Hasta (excluido), ISO 8601 con zona */
-                date_to?: string | null;
                 /** @description Página, desde 1 */
                 page?: number;
                 /** @description Registros por página (máx. 200) */
                 page_size?: number;
+                entity?: string | null;
+                entity_id?: number | null;
+                user_id?: number | null;
+                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
+                /** @description Desde este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_from?: string | null;
+                /** @description Hasta este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_to?: string | null;
             };
             header?: never;
             path?: never;
@@ -2316,6 +2395,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_AuditEntryOut_"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_audit_api_v1_audit_export_xlsx_get: {
+        parameters: {
+            query?: {
+                entity?: string | null;
+                entity_id?: number | null;
+                user_id?: number | null;
+                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
+                /** @description Desde este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_from?: string | null;
+                /** @description Hasta este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo .xlsx */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit_entities_api_v1_audit_entities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntityOption"][];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit_users_api_v1_audit_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditUserOption"][];
                 };
             };
             /** @description Error de validación */

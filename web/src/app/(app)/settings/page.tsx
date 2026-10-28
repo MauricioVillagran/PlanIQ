@@ -4,6 +4,7 @@ import {
   Building2,
   ChevronRight,
   Clock,
+  FileClock,
   Grid3x3,
   MapPin,
   ShieldCheck,
@@ -30,6 +31,7 @@ const GROUPS: Array<{ title: string; entries: Entry[] }> = [
       { href: "/settings/plants", title: "Plantas", description: "Plantas propias y maquilas", icon: Building2, permission: "masters.view" },
       { href: "/settings/shifts", title: "Turnos", description: "Turnos por planta y cobertura del día", icon: Clock, permission: "masters.view" },
       { href: "/settings/parameters", title: "Parámetros", description: "Valores globales y por planta con vigencia", icon: SlidersHorizontal, permission: "masters.view" },
+      { href: "/settings/audit", title: "Auditoría", description: "Quién cambió qué y cuándo, con exportación a Excel", icon: FileClock, permission: "audit.view" },
     ],
   },
   {
