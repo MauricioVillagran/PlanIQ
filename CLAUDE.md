@@ -106,6 +106,7 @@ Todo mantenedor se arma con `app.core.maintainer`, nunca con endpoints escritos 
 - PK `id BIGINT IDENTITY`. `plant_id` en toda tabla operacional. Auditoría `created_at`, `created_by`, `updated_at`, `updated_by`. Borrado lógico con `is_active` cuando el registro tiene historia. Reglas con `valid_from`/`valid_to` y `version`.
 - Pesos y cantidades en `DECIMAL(10,3)` (u otra precisión `DECIMAL` justificada). **Nunca `FLOAT`** para kilos, cajas o piezas.
 - Fechas y horas almacenadas en **UTC**; se interpretan en la zona de la planta (por defecto `America/Santiago`).
+- Restar o comparar instantes **siempre en UTC**: Python ignora el cambio de horario al operar dos `datetime` con la misma zona (el día del cambio, la fecha productiva dura 23 o 25 horas). Las funciones de dominio devuelven instantes en UTC.
 - `rowversion` en toda tabla editable.
 - **Tablas temporales (system-versioned)** en las tablas editables del plan (`plan.daily_plans`, `plan.harvest_entries`, `plan.harvest_entry_quality_mix`, `plan.grader_program_assignments`, `plan.shift_production_plans`, `plan.commercial_allocations`, `plan.frozen_requirements`) y en `master.grading_rules` y `master.downgrade_rules`. **No** llevan: `plan.grader_simulations`, `plan.grader_simulation_results` (versionadas por ejecución), `plan.notifications`, `plan.change_events`, ni `actual.*`. Definir `HISTORY_RETENTION_PERIOD`.
 - Alembic crea tablas temporales, triggers y columnstore con **SQL explícito** (`op.execute`), con su `downgrade` correspondiente.
