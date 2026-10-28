@@ -119,7 +119,10 @@ Plan original:
 - `PUT .../harvest-entries/order` (orden de faena) y `GET /daily-plans/{id}/summary` (totales y advertencias).
 - Permisos `plan.view` y `plan.edit`, y acceso por planta.
 
-### F1.5 · Publicación, versiones y cierre — `feature/f1-plan-flow`
+### F1.5 · Publicación, versiones y cierre — `feature/f1-plan-flow` (hecho)
+- Entregado: `POST /daily-plans/{id}/publish`, `/changes` (lote con motivo: agregar, modificar, eliminar y reordenar; se valida el plan completo), `/close` (después del fin del último turno; `closable_at` en el detalle), `GET /versions`, `/versions/{n}` y `/versions/compare?a=&b=` sobre el historial temporal. Concurrencia con el `row_version` del plan y de cada línea.
+
+Plan original:
 - `POST /daily-plans/{id}/publish` (versión 1; bloquea si hay errores).
 - `POST /daily-plans/{id}/changes`: lote de cambios con motivo sobre un plan publicado (D2), que produce una versión nueva.
 - `POST /daily-plans/{id}/close` (D8).

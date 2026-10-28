@@ -299,3 +299,174 @@ def test_plans_of_other_plants_are_not_accessible(
     token = login(client, "ajena")["access_token"]
     assert client.get(_url(setup), headers=auth_header(token)).status_code == 403
     assert client.get(f"/api/v1/daily-plans/{plan_id}", headers=auth_header(token)).status_code == 404
+
+
+# --- Flujo: publicar, cambios con motivo y cerrar --------------------------------------------
+# El historial de versiones se prueba con transacciones reales en test_daily_plan_model.py.
+
+
+def _post(
+    client: TestClient, s: Setup, plan_id: int, action: str, body: dict[str, Any], token: str | None = None
+) -> Any:
+    return client.post(
+        f"/api/v1/daily-plans/{plan_id}/{action}", headers=auth_header(token or s.token), json=body
+    )
+
+
+def _plan_with_line(client: TestClient, s: Setup, day: str = DAY) -> dict[str, Any]:
+    plan_id = _create(client, s, day)["plan"]["id"]
+    _add(client, s, plan_id, _line(s, "N1", 10_000, "4.5"))
+    detail: dict[str, Any] = client.get(f"/api/v1/daily-plans/{plan_id}", headers=auth_header(s.token)).json()
+    return detail
+
+
+def test_publish_creates_version_one_and_locks_line_editing(client: TestClient, setup: Setup) -> None:
+    detail = _plan_with_line(client, setup)
+    plan = detail["plan"]
+    res = _post(client, setup, plan["id"], "publish", {"row_version": plan["row_version"]})
+    assert res.status_code == 200, res.text
+    published = res.json()["plan"]
+    assert (published["status"], published["current_version"]) == ("published", 1)
+    assert published["published_by"] is not None
+
+    blocked = _add(client, setup, plan["id"], _line(setup, "N2", 1_000, "4"))
+    assert blocked.status_code == 422
+    assert blocked.json()["code"] == "plan_published"
+    again = _post(client, setup, plan["id"], "publish", {"row_version": published["row_version"]})
+    assert again.json()["code"] == "plan_already_published"
+
+
+def test_publish_rejects_empty_plans_errors_and_stale_versions(
+    client: TestClient, setup: Setup, db_session: Session
+) -> None:
+    empty = _create(client, setup, "2026-11-10")["plan"]
+    assert (
+        _post(client, setup, empty["id"], "publish", {"row_version": empty["row_version"]}).json()["code"]
+        == "plan_empty"
+    )
+
+    plan = _plan_with_line(client, setup)["plan"]
+    stale = _post(client, setup, plan["id"], "publish", {"row_version": "0000000000000001"})
+    assert stale.status_code == 409
+
+    # El rango de peso cambia después de cargar la línea: la publicación se bloquea.
+    weight_min = next(
+        p
+        for p in db_session.query(Parameter).filter_by(
+            key="harvest.avg_weight_kg.min", plant_id=setup.plant.id
+        )
+    )
+    weight_min.value = "5"
+    db_session.commit()
+    res = _post(client, setup, plan["id"], "publish", {"row_version": plan["row_version"]})
+    assert res.status_code == 422
+    assert res.json()["code"] == "plan_has_errors"
+    assert res.json()["details"]["issues"][0]["code"] == "avg_weight_out_of_range"
+
+
+def test_publish_requires_permission(
+    client: TestClient, setup: Setup, make_user: Callable[..., User]
+) -> None:
+    plan = _plan_with_line(client, setup)["plan"]
+    make_user("calidad", roles=("quality",), plants=(setup.plant,))
+    token = login(client, "calidad")["access_token"]
+    assert (
+        _post(client, setup, plan["id"], "publish", {"row_version": plan["row_version"]}, token).status_code
+        == 403
+    )
+
+
+def test_published_plan_is_visible_to_other_roles(
+    client: TestClient, setup: Setup, make_user: Callable[..., User]
+) -> None:
+    plan = _plan_with_line(client, setup)["plan"]
+    _post(client, setup, plan["id"], "publish", {"row_version": plan["row_version"]})
+    make_user("produccion", roles=("production",), plants=(setup.plant,))
+    token = login(client, "produccion")["access_token"]
+    res = client.get(_url(setup), headers=auth_header(token))
+    assert res.status_code == 200
+    assert res.json()["plan"]["status"] == "published"
+
+
+def test_changes_need_a_reason_and_create_a_new_version(client: TestClient, setup: Setup) -> None:
+    detail = _plan_with_line(client, setup)
+    plan = _post(
+        client, setup, detail["plan"]["id"], "publish", {"row_version": detail["plan"]["row_version"]}
+    ).json()
+    entry = plan["entries"][0]
+    change = {
+        "row_version": plan["plan"]["row_version"],
+        "update": [{"id": entry["id"], "row_version": entry["row_version"], "fish_count": 11_000}],
+        "add": [_line(setup, "S1", 3_000, "4.2", shift=setup.night)],
+    }
+    without_reason = _post(client, setup, plan["plan"]["id"], "changes", change)
+    assert without_reason.status_code == 422
+
+    res = _post(
+        client, setup, plan["plan"]["id"], "changes", change | {"reason": "Ajuste por mortalidad en N1"}
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["plan"]["current_version"] == 2
+    assert [(e["cage_code"], e["fish_count"], e["sequence"]) for e in body["entries"]] == [
+        ("N1", 11_000, 1),
+        ("S1", 3_000, 2),
+    ]
+
+    # Otro usuario con la versión anterior del plan: conflicto, no se pisan.
+    stale = _post(client, setup, plan["plan"]["id"], "changes", change | {"reason": "Cambio concurrente"})
+    assert stale.status_code == 409
+
+    versions = client.get(
+        f"/api/v1/daily-plans/{plan['plan']['id']}/versions", headers=auth_header(setup.token)
+    ).json()
+    assert [(v["number"], v["reason"]) for v in versions] == [(2, "Ajuste por mortalidad en N1"), (1, None)]
+
+    current = body["plan"]["row_version"]
+    nothing = _post(
+        client, setup, plan["plan"]["id"], "changes", {"row_version": current, "reason": "Sin cambios reales"}
+    )
+    assert nothing.json()["code"] == "no_changes"
+
+
+def test_changes_are_validated_as_a_whole(client: TestClient, setup: Setup) -> None:
+    detail = _plan_with_line(client, setup)
+    plan = _post(
+        client, setup, detail["plan"]["id"], "publish", {"row_version": detail["plan"]["row_version"]}
+    ).json()
+    over = {
+        "row_version": plan["plan"]["row_version"],
+        "reason": "Agregar jaulas al acopio A1",
+        "add": [_line(setup, "N2", 20_000, "4"), _line(setup, "S1", 15_000, "4")],
+    }
+    res = _post(client, setup, plan["plan"]["id"], "changes", over)
+    assert res.status_code == 422
+    assert res.json()["details"]["issues"][0]["code"] == "holding_cage_capacity_exceeded"
+
+
+def test_close_only_after_the_productive_day_and_then_immutable(client: TestClient, setup: Setup) -> None:
+    future = _plan_with_line(client, setup, "2099-01-05")["plan"]
+    future = _post(client, setup, future["id"], "publish", {"row_version": future["row_version"]}).json()[
+        "plan"
+    ]
+    early = _post(client, setup, future["id"], "close", {"row_version": future["row_version"]})
+    assert early.json()["code"] == "plan_day_not_finished"
+
+    draft = _plan_with_line(client, setup, "2020-01-06")["plan"]
+    assert (
+        _post(client, setup, draft["id"], "close", {"row_version": draft["row_version"]}).json()["code"]
+        == "plan_not_published"
+    )
+    past = _post(client, setup, draft["id"], "publish", {"row_version": draft["row_version"]}).json()
+    closed = _post(client, setup, draft["id"], "close", {"row_version": past["plan"]["row_version"]})
+    assert closed.status_code == 200, closed.text
+    assert closed.json()["plan"]["status"] == "closed"
+    assert closed.json()["closable_at"] is not None
+
+    entry = past["entries"][0]
+    change = {
+        "row_version": closed.json()["plan"]["row_version"],
+        "reason": "Intento posterior al cierre",
+        "update": [{"id": entry["id"], "row_version": entry["row_version"], "fish_count": 1}],
+    }
+    assert _post(client, setup, draft["id"], "changes", change).json()["code"] == "plan_closed"

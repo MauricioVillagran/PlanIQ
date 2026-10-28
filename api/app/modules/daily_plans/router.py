@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 
 from app.db.session import SessionDep
 from app.modules.auth.dependencies import CurrentUser, require_permission
+from app.modules.daily_plans.flow import PlanFlowService
 from app.modules.daily_plans.schemas import (
     DailyPlanCreate,
     DailyPlanDetailOut,
@@ -14,8 +15,13 @@ from app.modules.daily_plans.schemas import (
     HarvestEntryResult,
     HarvestEntryUpdate,
     HarvestOrderIn,
+    PlanChangesIn,
     PlanDayOut,
     PlanSummaryOut,
+    PlanTransitionIn,
+    VersionCompareOut,
+    VersionDetailOut,
+    VersionOut,
 )
 from app.modules.daily_plans.service import DailyPlanService
 
@@ -151,3 +157,86 @@ def delete_entry(
     row_version: RowVersion,
 ) -> HarvestEntryResult:
     return DailyPlanService(session, user).delete_entry(plan_id, entry_id, row_version)
+
+
+# --- Flujo: publicar, cambios con motivo, cerrar y versiones -------------------------------
+
+Publisher = Annotated[CurrentUser, Depends(require_permission("plan.publish"))]
+Closer = Annotated[CurrentUser, Depends(require_permission("plan.close"))]
+_CONFLICT: dict[int | str, dict[str, Any]] = {
+    409: {"description": "Otro usuario cambió el plan; details.current"}
+}
+
+
+@router.post(
+    "/daily-plans/{plan_id}/publish",
+    response_model=DailyPlanDetailOut,
+    summary="Publicar el plan (versión 1); exige líneas y ningún error bloqueante",
+    responses=_CONFLICT,
+)
+def publish_plan(
+    session: SessionDep, user: Publisher, plan_id: PlanId, body: PlanTransitionIn
+) -> DailyPlanDetailOut:
+    service = PlanFlowService(session, user)
+    return service.detail(service.publish(plan_id, body.row_version))
+
+
+@router.post(
+    "/daily-plans/{plan_id}/changes",
+    response_model=DailyPlanDetailOut,
+    summary="Modificar un plan publicado: lote de cambios con motivo, crea una versión nueva",
+    responses=_CONFLICT,
+)
+def change_plan(
+    session: SessionDep, user: Editor, plan_id: PlanId, body: PlanChangesIn
+) -> DailyPlanDetailOut:
+    service = PlanFlowService(session, user)
+    return service.detail(service.apply_changes(plan_id, body))
+
+
+@router.post(
+    "/daily-plans/{plan_id}/close",
+    response_model=DailyPlanDetailOut,
+    summary="Cerrar el plan cuando terminó la fecha productiva (queda inmutable)",
+    responses=_CONFLICT,
+)
+def close_plan(
+    session: SessionDep, user: Closer, plan_id: PlanId, body: PlanTransitionIn
+) -> DailyPlanDetailOut:
+    service = PlanFlowService(session, user)
+    return service.detail(service.close(plan_id, body.row_version))
+
+
+@router.get(
+    "/daily-plans/{plan_id}/versions",
+    response_model=list[VersionOut],
+    summary="Versiones publicadas, la más reciente primero",
+)
+def list_versions(session: SessionDep, user: Viewer, plan_id: PlanId) -> list[VersionOut]:
+    return PlanFlowService(session, user).versions(plan_id)
+
+
+@router.get(
+    "/daily-plans/{plan_id}/versions/compare",
+    response_model=VersionCompareOut,
+    summary="Comparar dos versiones: líneas agregadas, eliminadas y modificadas campo a campo",
+)
+def compare_versions(
+    session: SessionDep,
+    user: Viewer,
+    plan_id: PlanId,
+    a: Annotated[int, Query(ge=1, description="Versión base")],
+    b: Annotated[int, Query(ge=1, description="Versión a comparar")],
+) -> VersionCompareOut:
+    return PlanFlowService(session, user).compare(plan_id, a, b)
+
+
+@router.get(
+    "/daily-plans/{plan_id}/versions/{number}",
+    response_model=VersionDetailOut,
+    summary="El plan tal como quedó en una versión",
+)
+def get_version(
+    session: SessionDep, user: Viewer, plan_id: PlanId, number: Annotated[int, Path(ge=1)]
+) -> VersionDetailOut:
+    return PlanFlowService(session, user).version_detail(plan_id, number)

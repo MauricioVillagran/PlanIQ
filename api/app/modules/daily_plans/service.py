@@ -6,13 +6,14 @@ demás roles lo ven desde que se publica.
 """
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, FieldError, NotFoundError
 from app.domain import harvest
 from app.domain.harvest import HarvestLine, HoldingCageInfo, Issue, Severity, WeightRange
@@ -172,11 +173,19 @@ class DailyPlanService:
     def summary(self, plan: DailyPlan) -> PlanSummaryOut:
         return summary_out(repository.to_lines(plan.entries), self.rules(plan))
 
+    def closable_at(self, plan: DailyPlan) -> datetime | None:
+        """Fin de la fecha productiva: fin del turno activo que termina más tarde (ADR 0005, decisión 8)."""
+        plant = self.session.get(Plant, plan.plant_id)
+        windows = [s.window() for s in active_shifts(self.session, plan.plant_id)]
+        timezone = plant.timezone if plant is not None else get_settings().app_timezone
+        return harvest.productive_day_end(plan.productive_date, windows, timezone)
+
     def detail(self, plan: DailyPlan) -> DailyPlanDetailOut:
         return DailyPlanDetailOut(
             plan=DailyPlanOut.model_validate(plan),
             entries=[HarvestEntryOut.model_validate(e) for e in plan.entries],
             summary=self.summary(plan),
+            closable_at=self.closable_at(plan),
         )
 
     def week(self, plant_id: int, date_from: date, date_to: date) -> list[PlanDayOut]:

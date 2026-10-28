@@ -11,8 +11,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.audit.models import AuditLog
+from app.modules.auth.dependencies import CurrentUser
 from app.modules.daily_plans import repository
+from app.modules.daily_plans.flow import PlanFlowService
 from app.modules.daily_plans.models import DailyPlan, DailyPlanVersion, HarvestEntry, VersionKind
+from app.modules.daily_plans.schemas import (
+    DailyPlanCreate,
+    EntryChange,
+    EntryRef,
+    HarvestEntryCreate,
+    PlanChangesIn,
+)
 from app.modules.farms.models import Cage, FarmCenter, HoldingCage
 from app.modules.plants.models import Plant
 from app.modules.shifts.models import Shift
@@ -180,3 +189,62 @@ def test_history_rebuilds_each_version_as_it_was(committed: Session) -> None:
         )
     )
     assert current[0].notes == "Revisar"
+
+
+def test_flow_versions_and_compare_show_exactly_what_changed(committed: Session) -> None:
+    session = committed
+    m = _create_masters(session, "TMP")
+    session.commit()
+    user = CurrentUser(
+        id=999_999,
+        username="prueba",
+        full_name="Prueba",
+        email="prueba@example.com",
+        must_change_password=False,
+        role_codes=frozenset({"planning"}),
+        permissions=frozenset({"plan.view", "plan.edit", "plan.publish", "plan.close"}),
+        plant_ids=None,
+    )
+    flow = PlanFlowService(session, user)
+    plan = flow.create(m.plant.id, date(2026, 11, 4), DailyPlanCreate())
+
+    def line(cage: Cage, fish: int, weight: str) -> HarvestEntryCreate:
+        return HarvestEntryCreate(
+            cage_id=cage.id,
+            holding_cage_id=m.holding.id,
+            shift_id=m.day.id,
+            fish_count=fish,
+            avg_weight_kg=Decimal(weight),
+        )
+
+    a = flow.add_entry(plan.id, line(m.cages[0], 10_000, "4.5")).entry
+    b = flow.add_entry(plan.id, line(m.cages[1], 8_000, "5.2")).entry
+    assert a is not None and b is not None
+    plan = flow.publish(plan.id, plan.row_version.hex())
+
+    entries = {e.id: e for e in plan.entries}
+    plan = flow.apply_changes(
+        plan.id,
+        PlanChangesIn(
+            row_version=plan.row_version.hex(),
+            reason="Jaula J-2 en ayuno extendido",
+            update=[EntryChange(id=a.id, row_version=entries[a.id].row_version.hex(), fish_count=12_000)],
+            delete=[EntryRef(id=b.id, row_version=entries[b.id].row_version.hex())],
+            add=[line(m.cages[2], 6_000, "3.9")],
+        ),
+    )
+    assert plan.current_version == 2
+
+    versions = flow.versions(plan.id)
+    assert [(v.number, v.kind, v.reason) for v in versions] == [
+        (2, "change", "Jaula J-2 en ayuno extendido"),
+        (1, "publish", None),
+    ]
+    assert versions[1].totals.fish_count == 18_000
+    assert versions[0].totals.fish_count == 18_000  # 12.000 + 6.000
+
+    diff = flow.compare(plan.id, 1, 2)
+    assert [line.cage_code for line in diff.added] == ["J-3"]
+    assert [line.cage_code for line in diff.removed] == ["J-2"]
+    assert [(c.field, c.old, c.new) for c in diff.changed[0].changes] == [("fish_count", 10_000, 12_000)]
+    assert flow.version_detail(plan.id, 1).entries[1].cage_code == "J-2"
