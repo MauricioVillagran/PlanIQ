@@ -26,3 +26,14 @@ class UtcDateTime(TypeDecorator[datetime]):
         if value is None:
             return None
         return value.replace(tzinfo=UTC)
+
+
+class PreciseUtcDateTime(UtcDateTime):
+    """Como UtcDateTime, al microsegundo: DATETIME2(6), la precisión de `datetime` de Python.
+
+    Para instantes que se comparan con las columnas de período de las tablas temporales: el valor
+    vuelve a la base sin redondeo.
+    """
+
+    impl = mssql.DATETIME2(precision=6)  # type: ignore[no-untyped-call]
+    cache_ok = True

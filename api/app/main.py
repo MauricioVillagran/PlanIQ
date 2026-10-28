@@ -10,6 +10,7 @@ from app.modules.audit.listener import register_audit_listeners
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.security import RateLimiter
+from app.modules.daily_plans.router import router as daily_plans_router
 from app.modules.farms.router import router as farms_router
 from app.modules.health.router import router as health_router
 from app.modules.parameters.router import router as parameters_router
@@ -54,6 +55,7 @@ def create_app() -> FastAPI:
     api.include_router(shifts_router)
     api.include_router(parameters_router)
     api.include_router(farms_router)
+    api.include_router(daily_plans_router)
     app.include_router(api)
     return app
 
