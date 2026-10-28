@@ -176,6 +176,9 @@ test("cinco intentos fallidos bloquean la cuenta y el administrador la desbloque
   await loginAsAdmin(page);
   await openSettings(page, "Usuarios");
   await page.getByPlaceholder("Buscar por usuario, nombre o correo").fill(username);
+  // La lista conserva los resultados anteriores mientras busca: sin esperar el filtro se abre el
+  // usuario del otro proyecto, que tiene el mismo nombre.
+  await expect(page.getByText("1–1 de 1")).toBeVisible();
   const panel = await openRow(page, "E2E Planificación");
   await expect(panel.getByText("Cuenta bloqueada por intentos fallidos")).toBeVisible();
   await panel.getByRole("button", { name: "Desbloquear" }).click();
