@@ -95,16 +95,25 @@ Plan original:
 - Permiso `farms.edit` (D6), con migración.
 - API con el patrón de mantenedor. Pantallas en **Configuración › Cultivo**: centros, jaulas (filtradas por centro) y acopios (de la planta del contexto).
 
-### F1.2 · Dominio del plan — `feature/f1-domain`
+### F1.2 · Dominio del plan — `feature/f1-domain` (hecho)
+- Entregado: `app/domain/harvest.py` con biomasa, WFE, totales por día, turno y centro, validaciones (capacidad de acopio por turno, peso plausible semiabierto, jaula repetida, configuración faltante), diferencias entre versiones y inicio/fin de la fecha productiva. 27 pruebas, con un caso de control calculado a mano (22.500 peces, 96.937,5 kg, WFE 89.182,5 kg con factor 0,92) y la fecha productiva de 25 horas del cambio de horario.
+
+Plan original:
 - Funciones puras en `app/domain/harvest.py`: biomasa por línea, WFE con factor (D1), totales por día, turno y centro; validaciones de capacidad (D3), peso plausible (D5) y jaula repetida; diferencias entre dos versiones.
 - Pruebas con casos de control calculados a mano, y fecha productiva con turno nocturno (reutiliza `app/domain/shifts.py`).
 
-### F1.3 · Modelo del plan y tablas temporales — `feature/f1-plan-model`
+### F1.3 · Modelo del plan y tablas temporales — `feature/f1-plan-model` (hecho)
+- Entregado: migración `0008` con `plan.daily_plans`, `plan.harvest_entries` (temporales, historial en `plan_history`, retención de 5 años) y `plan.daily_plan_versions` (cabecera con `snapshot_at`, el instante que reconstruye la versión). `repository.entries_as_of` y `version_entries` leen el plan "tal como estaba".
+
+Plan original:
 - `plan.daily_plans` (planta, fecha productiva única por planta, estado, versión vigente, publicación y cierre), `plan.harvest_entries` (centro, jaula, acopio, peces, peso promedio, turno, orden, observaciones) y `plan.daily_plan_versions` (número, usuario, motivo, fecha).
 - Versionado de sistema con SQL explícito en la migración (`SYSTEM_VERSIONING`, columnas de período ocultas para el ORM), `rowversion` y auditoría.
 - Prueba de que el historial temporal reconstruye el plan "tal como estaba" en una versión.
 
-### F1.4 · API del plan en Borrador — `feature/f1-plan-api`
+### F1.4 · API del plan en Borrador — `feature/f1-plan-api` (hecho)
+- Entregado: `/plants/{id}/daily-plans/{fecha}` (consultar y crear, vacío o `copy_from`), `/plants/{id}/daily-plans?from=&to=` (vista semanal, máx. 31 días), `/daily-plans/{id}`, `/summary`, `/harvest-entries` (alta, edición con `row_version`, baja con `?row_version=`) y `PUT /harvest-entries/order`. Al guardar una línea bloquean solo los errores que la involucran; las advertencias vuelven en `summary.issues`. Un Borrador es invisible (404) para quien no tiene `plan.edit`.
+
+Plan original:
 - `/plants/{id}/daily-plans/{fecha}`: consultar y crear (vacío o `copy_from`); `/plants/{id}/daily-plans?from=&to=`: vista semanal.
 - `/daily-plans/{id}/harvest-entries`: alta, edición y baja de líneas con validaciones. La respuesta trae las advertencias aparte de los errores.
 - `PUT .../harvest-entries/order` (orden de faena) y `GET /daily-plans/{id}/summary` (totales y advertencias).
