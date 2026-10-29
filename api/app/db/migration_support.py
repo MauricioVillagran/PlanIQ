@@ -25,5 +25,19 @@ def render_item(type_: str, obj: Any, autogen_context: Any) -> str | bool:
     """Las migraciones generadas no deben importar tipos de la aplicación: UtcDateTime → DATETIME2(3)."""
     if type_ == "type" and isinstance(obj, UtcDateTime):
         autogen_context.imports.add("from sqlalchemy.dialects import mssql")
-        return "mssql.DATETIME2(precision=3)"
+        return f"mssql.DATETIME2(precision={obj.impl.precision})"
     return False  # render por defecto
+
+
+# Tablas temporales: el historial vive en este esquema y las columnas de período son ocultas. Los
+# crea SQL explícito en las migraciones y no tienen modelo, así que la comparación los ignora.
+HISTORY_SCHEMA = "plan_history"
+PERIOD_COLUMNS = frozenset({"valid_from", "valid_to"})
+
+
+def include_name(name: str | None, type_: str, parent_names: dict[str, Any]) -> bool:
+    return not (type_ == "schema" and name == HISTORY_SCHEMA)
+
+
+def include_object(obj: Any, name: str | None, type_: str, reflected: bool, compare_to: Any) -> bool:
+    return not (type_ == "column" and reflected and compare_to is None and name in PERIOD_COLUMNS)

@@ -19,6 +19,7 @@
 | F0.9 Pantallas | Mantenedor genérico y pantallas de Configuración | #9 |
 | F0.10 Pruebas y CI | Playwright 360 px y escritorio, Vitest, GitHub Actions | #10, #11, #12 |
 | F0.11 Cierre | README final, guía de operación y respaldos, esta nota | — |
+| Pantalla de Auditoría (posterior al cierre) | Configuración › Auditoría (permiso `audit.view`): filtros por tabla, usuario, acción y fechas locales, detalle de cada cambio y exportación a Excel (máximo 50.000 filas); API `/audit/export.xlsx`, `/audit/entities`, `/audit/users` | — |
 
 **Pruebas:** 170 de backend (pytest, contra SQL Server), 29 unitarias de frontend (Vitest) y 13 end-to-end (Playwright: primer ingreso más 6 flujos en escritorio y 6 en celular, uno de ellos solo para celular). CI en verde en `develop`: [corrida 40602560671](https://github.com/MauricioVillagran/PlanIQ/actions/runs/40602560671).
 

@@ -87,6 +87,7 @@ docs/       especificación, adr/, manual por rol, notas de fase
   - Excluir un modelo: `__audit__ = False`. Excluir campos ruidosos: `__audit_exclude__`. Ocultar valores sensibles: `__audit_mask__`.
   - Procesos sin usuario (worker, arranque) quedan como acción del sistema (`user_id` nulo). Un proceso nuevo debe llamar a `register_audit_listeners()` al iniciar.
   - Historial de un registro para los mantenedores: `app.modules.audit.service.record_history`.
+  - Pantalla Configuración › Auditoría (`audit.view`). Una tabla auditada nueva agrega su nombre en español en `app/modules/audit/labels.py` y sus nombres de campo en `FIELD_LABELS` de `web/src/features/audit/audit-page.tsx`.
 - Decisiones de autenticación y matriz de permisos: [ADR 0002](docs/adr/0002-autenticacion-y-permisos.md).
 
 ### Mantenedores (API)
@@ -106,9 +107,11 @@ Todo mantenedor se arma con `app.core.maintainer`, nunca con endpoints escritos 
 - PK `id BIGINT IDENTITY`. `plant_id` en toda tabla operacional. Auditoría `created_at`, `created_by`, `updated_at`, `updated_by`. Borrado lógico con `is_active` cuando el registro tiene historia. Reglas con `valid_from`/`valid_to` y `version`.
 - Pesos y cantidades en `DECIMAL(10,3)` (u otra precisión `DECIMAL` justificada). **Nunca `FLOAT`** para kilos, cajas o piezas.
 - Fechas y horas almacenadas en **UTC**; se interpretan en la zona de la planta (por defecto `America/Santiago`).
+- Restar o comparar instantes **siempre en UTC**: Python ignora el cambio de horario al operar dos `datetime` con la misma zona (el día del cambio, la fecha productiva dura 23 o 25 horas). Las funciones de dominio devuelven instantes en UTC.
 - `rowversion` en toda tabla editable.
 - **Tablas temporales (system-versioned)** en las tablas editables del plan (`plan.daily_plans`, `plan.harvest_entries`, `plan.harvest_entry_quality_mix`, `plan.grader_program_assignments`, `plan.shift_production_plans`, `plan.commercial_allocations`, `plan.frozen_requirements`) y en `master.grading_rules` y `master.downgrade_rules`. **No** llevan: `plan.grader_simulations`, `plan.grader_simulation_results` (versionadas por ejecución), `plan.notifications`, `plan.change_events`, ni `actual.*`. Definir `HISTORY_RETENTION_PERIOD`.
 - Alembic crea tablas temporales, triggers y columnstore con **SQL explícito** (`op.execute`), con su `downgrade` correspondiente.
+- Tablas temporales: columnas de período `valid_from`/`valid_to` **ocultas** y sin mapear en el ORM; historial en el esquema `plan_history` (Alembic lo ignora al comparar, `app.db.migration_support`). El período es la hora de **inicio de la transacción**: una prueba de historial necesita transacciones reales (ver `test_daily_plan_model.py`), no la sesión que se revierte. Para guardar un instante comparable con el período, `PreciseUtcDateTime` (DATETIME2(6)). En SQL escrito a mano, `[plan]` va entre corchetes (palabra reservada).
 - `actual.grader_piece_records`: índice **columnstore agrupado**, sin tabla temporal; trazabilidad por `import_batch_id`.
 - Vistas indexadas solo cuando una medición lo justifique.
 - El diseño debe funcionar en **SQL Server Express** (dev/QA): 10 GB por base. Vigilar el crecimiento de `actual.*` y del historial temporal.

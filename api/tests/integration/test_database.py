@@ -8,7 +8,7 @@ from sqlalchemy import Connection, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.db.migration_support import compare_type
+from app.db.migration_support import compare_type, include_name, include_object
 from app.db.models import Base
 from app.modules.jobs import repository
 from app.modules.jobs.models import Job
@@ -17,7 +17,13 @@ pytestmark = pytest.mark.integration
 
 
 def test_migrations_match_models(connection: Connection) -> None:
-    ctx = MigrationContext.configure(connection, opts={"include_schemas": True, "compare_type": compare_type})
+    opts = {
+        "include_schemas": True,
+        "compare_type": compare_type,
+        "include_name": include_name,
+        "include_object": include_object,
+    }
+    ctx = MigrationContext.configure(connection, opts=opts)
     diffs = [
         d
         for d in compare_metadata(ctx, Base.metadata)

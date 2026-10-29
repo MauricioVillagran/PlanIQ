@@ -11,7 +11,19 @@ class AuditEntryOut(BaseModel):
     username: str | None
     action: str = Field(examples=["update"])
     entity: str = Field(examples=["master.plants"])
+    entity_label: str = Field(examples=["Plantas"], description="Nombre de la tabla en español")
     entity_id: int
     plant_id: int | None
     changes: dict[str, Any] = Field(examples=[{"name": {"old": "Planta VS", "new": "Planta Victoria Sur"}}])
     request_id: str | None
+
+
+class AuditEntityOption(BaseModel):
+    entity: str = Field(examples=["master.plants"])
+    label: str = Field(examples=["Plantas"])
+
+
+class AuditUserOption(BaseModel):
+    id: int
+    username: str
+    full_name: str

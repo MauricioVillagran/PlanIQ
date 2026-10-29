@@ -140,6 +140,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exportar la auditoría a Excel (mismos filtros del listado, máximo 50.000 filas) */
+        get: operations["export_audit_api_v1_audit_export_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tablas con registros de auditoría */
+        get: operations["list_audit_entities_api_v1_audit_entities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usuarios con registros de auditoría */
+        get: operations["list_audit_users_api_v1_audit_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -1064,10 +1115,314 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plants/{plant_id}/daily-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vista semanal: estado y totales por día (máximo 31 días) */
+        get: operations["list_plans_api_v1_plants__plant_id__daily_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plants/{plant_id}/daily-plans/{productive_date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan de una planta y fecha productiva, con líneas, totales y validaciones */
+        get: operations["get_plan_by_date_api_v1_plants__plant_id__daily_plans__productive_date__get"];
+        put?: never;
+        /** Crear el plan en Borrador, vacío o copiando las líneas de otra fecha */
+        post: operations["create_plan_api_v1_plants__plant_id__daily_plans__productive_date__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan por id */
+        get: operations["get_plan_api_v1_daily_plans__plan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totales del día, por turno y por centro, con errores y advertencias */
+        get: operations["get_summary_api_v1_daily_plans__plan_id__summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/harvest-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agregar una línea al plan en Borrador (al final del orden de faena) */
+        post: operations["add_entry_api_v1_daily_plans__plan_id__harvest_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/harvest-entries/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reordenar la orden de faena (todas las líneas, en el orden nuevo) */
+        put: operations["reorder_entries_api_v1_daily_plans__plan_id__harvest_entries_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/harvest-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Eliminar una línea del plan en Borrador */
+        delete: operations["delete_entry_api_v1_daily_plans__plan_id__harvest_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        /** Modificar una línea del plan en Borrador */
+        patch: operations["update_entry_api_v1_daily_plans__plan_id__harvest_entries__entry_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publicar el plan (versión 1); exige líneas y ningún error bloqueante */
+        post: operations["publish_plan_api_v1_daily_plans__plan_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Modificar un plan publicado: lote de cambios con motivo, crea una versión nueva */
+        post: operations["change_plan_api_v1_daily_plans__plan_id__changes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cerrar el plan cuando terminó la fecha productiva (queda inmutable) */
+        post: operations["close_plan_api_v1_daily_plans__plan_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Versiones publicadas, la más reciente primero */
+        get: operations["list_versions_api_v1_daily_plans__plan_id__versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/versions/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Comparar dos versiones: líneas agregadas, eliminadas y modificadas campo a campo */
+        get: operations["compare_versions_api_v1_daily_plans__plan_id__versions_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-plans/{plan_id}/versions/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El plan tal como quedó en una versión */
+        get: operations["get_version_api_v1_daily_plans__plan_id__versions__number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis avisos, más recientes primero */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contador de no leídos para la campana */
+        get: operations["notifications_summary_api_v1_notifications_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar todos mis avisos como leídos */
+        post: operations["read_all_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar un aviso como leído */
+        post: operations["read_one_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AuditEntityOption */
+        AuditEntityOption: {
+            /**
+             * Entity
+             * @example master.plants
+             */
+            entity: string;
+            /**
+             * Label
+             * @example Plantas
+             */
+            label: string;
+        };
         /** AuditEntryOut */
         AuditEntryOut: {
             /** Id */
@@ -1094,6 +1449,12 @@ export interface components {
              * @example master.plants
              */
             entity: string;
+            /**
+             * Entity Label
+             * @description Nombre de la tabla en español
+             * @example Plantas
+             */
+            entity_label: string;
             /** Entity Id */
             entity_id: number;
             /** Plant Id */
@@ -1112,6 +1473,15 @@ export interface components {
             };
             /** Request Id */
             request_id: string | null;
+        };
+        /** AuditUserOption */
+        AuditUserOption: {
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+            /** Full Name */
+            full_name: string;
         };
         /** CageCreate */
         CageCreate: {
@@ -1182,6 +1552,92 @@ export interface components {
              * Format: time
              */
             end: string;
+        };
+        /** DailyPlanCreate */
+        DailyPlanCreate: {
+            /**
+             * Copy From
+             * @description Copiar las líneas del plan de esta fecha (normalmente el día anterior)
+             */
+            copy_from?: string | null;
+        };
+        /** DailyPlanDetailOut */
+        DailyPlanDetailOut: {
+            plan: components["schemas"]["DailyPlanOut"];
+            /** Entries */
+            entries: components["schemas"]["HarvestEntryOut"][];
+            summary: components["schemas"]["PlanSummaryOut"];
+            /**
+             * Closable At
+             * @description Desde cuándo se puede cerrar: fin del último turno del día (null sin turnos)
+             */
+            closable_at: string | null;
+        };
+        /** DailyPlanOut */
+        DailyPlanOut: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Productive Date
+             * Format: date
+             */
+            productive_date: string;
+            /**
+             * Status
+             * @description draft, published o closed
+             * @example draft
+             */
+            status: string;
+            /**
+             * Current Version
+             * @description 0 mientras es Borrador
+             */
+            current_version: number;
+            /** Row Version */
+            row_version: string;
+            /** Published At */
+            published_at: string | null;
+            /** Published By */
+            published_by: number | null;
+            /** Closed At */
+            closed_at: string | null;
+            /** Closed By */
+            closed_by: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** EntryChange */
+        EntryChange: {
+            /** Row Version */
+            row_version: string;
+            /** Cage Id */
+            cage_id?: number | null;
+            /** Holding Cage Id */
+            holding_cage_id?: number | null;
+            /** Shift Id */
+            shift_id?: number | null;
+            /** Fish Count */
+            fish_count?: number | null;
+            /** Avg Weight Kg */
+            avg_weight_kg?: (number | string) | null;
+            /** Notes */
+            notes?: string | null;
+            /** Id */
+            id: number;
+        };
+        /** EntryRef */
+        EntryRef: {
+            /** Id */
+            id: number;
+            /** Row Version */
+            row_version: string;
         };
         /** ErrorResponse */
         ErrorResponse: {
@@ -1256,6 +1712,17 @@ export interface components {
             /** Zone */
             zone?: string | null;
         };
+        /** FieldChangeOut */
+        FieldChangeOut: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Old */
+            old: string | number | null;
+            /** New */
+            new: string | number | null;
+        };
         /** FieldError */
         FieldError: {
             /** Field */
@@ -1264,6 +1731,118 @@ export interface components {
             message: string;
             /** Code */
             code: string;
+        };
+        /** GroupTotalsOut */
+        GroupTotalsOut: {
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            totals: components["schemas"]["TotalsOut"];
+        };
+        /** HarvestEntryCreate */
+        HarvestEntryCreate: {
+            /**
+             * Cage Id
+             * @description La jaula define el centro
+             */
+            cage_id: number;
+            /** Holding Cage Id */
+            holding_cage_id: number;
+            /** Shift Id */
+            shift_id: number;
+            /**
+             * Fish Count
+             * @example 12000
+             */
+            fish_count: number;
+            /**
+             * Avg Weight Kg
+             * @example 4.850
+             */
+            avg_weight_kg: number | string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** HarvestEntryOut */
+        HarvestEntryOut: {
+            /** Id */
+            id: number;
+            /** Row Version */
+            row_version: string;
+            /**
+             * Sequence
+             * @description Orden de faena
+             */
+            sequence: number;
+            /** Farm Center Id */
+            farm_center_id: number;
+            /** Farm Center Code */
+            farm_center_code: string;
+            /** Farm Center Name */
+            farm_center_name: string;
+            /** Cage Id */
+            cage_id: number;
+            /** Cage Code */
+            cage_code: string;
+            /** Holding Cage Id */
+            holding_cage_id: number;
+            /** Holding Cage Code */
+            holding_cage_code: string;
+            /** Shift Id */
+            shift_id: number;
+            /** Shift Name */
+            shift_name: string;
+            /** Fish Count */
+            fish_count: number;
+            /**
+             * Avg Weight Kg
+             * Format: decimal
+             * @example 1234.500
+             */
+            avg_weight_kg: string;
+            /**
+             * Biomass Kg
+             * Format: decimal
+             * @example 1234.500
+             */
+            biomass_kg: string;
+            /** Notes */
+            notes: string | null;
+        };
+        /**
+         * HarvestEntryResult
+         * @description Respuesta al guardar una línea: la línea, y el resumen con las advertencias aparte.
+         */
+        HarvestEntryResult: {
+            /** @description Null al eliminar */
+            entry: components["schemas"]["HarvestEntryOut"] | null;
+            summary: components["schemas"]["PlanSummaryOut"];
+        };
+        /** HarvestEntryUpdate */
+        HarvestEntryUpdate: {
+            /** Row Version */
+            row_version: string;
+            /** Cage Id */
+            cage_id?: number | null;
+            /** Holding Cage Id */
+            holding_cage_id?: number | null;
+            /** Shift Id */
+            shift_id?: number | null;
+            /** Fish Count */
+            fish_count?: number | null;
+            /** Avg Weight Kg */
+            avg_weight_kg?: (number | string) | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** HarvestOrderIn */
+        HarvestOrderIn: {
+            /**
+             * Entry Ids
+             * @description Todas las líneas del plan, en el orden de faena
+             */
+            entry_ids: number[];
         };
         /** HealthResponse */
         HealthResponse: {
@@ -1325,6 +1904,38 @@ export interface components {
             /** Capacity Fish */
             capacity_fish?: number | null;
         };
+        /** IssueOut */
+        IssueOut: {
+            /**
+             * Code
+             * @example cage_repeated
+             */
+            code: string;
+            /**
+             * Severity
+             * @description error bloquea; warning solo avisa
+             * @example warning
+             */
+            severity: string;
+            /** Message */
+            message: string;
+            /**
+             * Entry Ids
+             * @description Líneas afectadas (vacío si es del plan completo)
+             */
+            entry_ids: number[];
+            /** Field */
+            field?: string | null;
+        };
+        /** LineChangeOut */
+        LineChangeOut: {
+            /** Entry Id */
+            entry_id: number;
+            /** Label */
+            label: string;
+            /** Changes */
+            changes: components["schemas"]["FieldChangeOut"][];
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -1358,6 +1969,42 @@ export interface components {
             all_plants: boolean;
             /** Plants */
             plants: components["schemas"]["PlantRef"][];
+        };
+        /** NotificationOut */
+        NotificationOut: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Title
+             * @example Plan del 28-10-2026 publicado
+             */
+            title: string;
+            /** Body */
+            body: string | null;
+            /**
+             * Link
+             * @example /plan?plant=1&date=2026-10-28
+             */
+            link: string | null;
+            /** Read At */
+            read_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** NotificationSummaryOut */
+        NotificationSummaryOut: {
+            /** Unread */
+            unread: number;
+            /**
+             * Poll Seconds
+             * @description Cada cuánto consultar (parámetro notifications.poll_seconds)
+             */
+            poll_seconds: number;
         };
         /** Page[AuditEntryOut] */
         Page_AuditEntryOut_: {
@@ -1396,6 +2043,17 @@ export interface components {
         Page_HoldingCageOut_: {
             /** Items */
             items: components["schemas"]["HoldingCageOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[NotificationOut] */
+        Page_NotificationOut_: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1565,6 +2223,111 @@ export interface components {
             /** Description */
             description: string | null;
         };
+        /**
+         * PlanChangesIn
+         * @description Lote de cambios sobre un plan publicado: produce una versión y un aviso (ADR 0005, decisión 2).
+         */
+        PlanChangesIn: {
+            /**
+             * Row Version
+             * @description row_version del plan leído; si cambió, 409
+             */
+            row_version: string;
+            /**
+             * Reason
+             * @example Cambio de jaula por condición sanitaria
+             */
+            reason: string;
+            /** Add */
+            add?: components["schemas"]["HarvestEntryCreate"][];
+            /** Update */
+            update?: components["schemas"]["EntryChange"][];
+            /** Delete */
+            delete?: components["schemas"]["EntryRef"][];
+            /**
+             * Order
+             * @description Orden de faena completo resultante (ids y new-<n>); sin él, se conserva
+             */
+            order?: (number | string)[] | null;
+        };
+        /**
+         * PlanDayOut
+         * @description Un día de la vista semanal. Sin plan (o Borrador sin permiso de edición): plan_id null.
+         */
+        PlanDayOut: {
+            /**
+             * Productive Date
+             * Format: date
+             */
+            productive_date: string;
+            /** Plan Id */
+            plan_id: number | null;
+            /** Status */
+            status: string | null;
+            /** Current Version */
+            current_version: number | null;
+            totals: components["schemas"]["TotalsOut"] | null;
+            /** Errors */
+            errors: number;
+            /** Warnings */
+            warnings: number;
+        };
+        /**
+         * PlanLineOut
+         * @description Una línea tal como estaba en una versión.
+         */
+        PlanLineOut: {
+            /** Entry Id */
+            entry_id: number;
+            /** Sequence */
+            sequence: number;
+            /** Farm Center Code */
+            farm_center_code: string;
+            /** Cage Code */
+            cage_code: string;
+            /** Holding Cage Code */
+            holding_cage_code: string;
+            /** Shift Name */
+            shift_name: string;
+            /** Fish Count */
+            fish_count: number;
+            /**
+             * Avg Weight Kg
+             * Format: decimal
+             * @example 1234.500
+             */
+            avg_weight_kg: string;
+            /**
+             * Biomass Kg
+             * Format: decimal
+             * @example 1234.500
+             */
+            biomass_kg: string;
+            /** Notes */
+            notes: string | null;
+        };
+        /** PlanSummaryOut */
+        PlanSummaryOut: {
+            day: components["schemas"]["TotalsOut"];
+            /** By Shift */
+            by_shift: components["schemas"]["GroupTotalsOut"][];
+            /** By Center */
+            by_center: components["schemas"]["GroupTotalsOut"][];
+            /** Issues */
+            issues: components["schemas"]["IssueOut"][];
+            /** Has Errors */
+            has_errors: boolean;
+            /** Wfe Factor */
+            wfe_factor: string | null;
+        };
+        /** PlanTransitionIn */
+        PlanTransitionIn: {
+            /**
+             * Row Version
+             * @description row_version del plan leído; si cambió, 409
+             */
+            row_version: string;
+        };
         /** PlantCreate */
         PlantCreate: {
             /**
@@ -1646,6 +2409,11 @@ export interface components {
             location?: string | null;
             /** Timezone */
             timezone?: string | null;
+        };
+        /** ReadAllOut */
+        ReadAllOut: {
+            /** Updated */
+            updated: number;
         };
         /** ReadinessResponse */
         ReadinessResponse: {
@@ -1871,6 +2639,26 @@ export interface components {
             /** Must Change Password */
             must_change_password: boolean;
         };
+        /** TotalsOut */
+        TotalsOut: {
+            /** Lines */
+            lines: number;
+            /** Fish Count */
+            fish_count: number;
+            /**
+             * Biomass Kg
+             * Format: decimal
+             * @example 1234.500
+             */
+            biomass_kg: string;
+            /**
+             * Wfe Kg
+             * @description Null si la planta no tiene factor WFE configurado
+             */
+            wfe_kg: string | null;
+            /** Avg Weight Kg */
+            avg_weight_kg: string | null;
+        };
         /** UserCreate */
         UserCreate: {
             /**
@@ -1956,6 +2744,50 @@ export interface components {
             role_ids?: number[] | null;
             /** Plant Ids */
             plant_ids?: number[] | null;
+        };
+        /** VersionCompareOut */
+        VersionCompareOut: {
+            /** A */
+            a: number;
+            /** B */
+            b: number;
+            /** Added */
+            added: components["schemas"]["PlanLineOut"][];
+            /** Removed */
+            removed: components["schemas"]["PlanLineOut"][];
+            /** Changed */
+            changed: components["schemas"]["LineChangeOut"][];
+            totals_a: components["schemas"]["TotalsOut"];
+            totals_b: components["schemas"]["TotalsOut"];
+        };
+        /** VersionDetailOut */
+        VersionDetailOut: {
+            version: components["schemas"]["VersionOut"];
+            /** Entries */
+            entries: components["schemas"]["PlanLineOut"][];
+        };
+        /** VersionOut */
+        VersionOut: {
+            /** Number */
+            number: number;
+            /**
+             * Kind
+             * @description publish (versión 1) o change
+             * @example publish
+             */
+            kind: string;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: number | null;
+            /** Created By Name */
+            created_by_name: string | null;
+            totals: components["schemas"]["TotalsOut"];
         };
     };
     responses: never;
@@ -2290,18 +3122,18 @@ export interface operations {
     list_audit_api_v1_audit_get: {
         parameters: {
             query?: {
-                entity?: string | null;
-                entity_id?: number | null;
-                user_id?: number | null;
-                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
-                /** @description Desde (incluido), ISO 8601 con zona */
-                date_from?: string | null;
-                /** @description Hasta (excluido), ISO 8601 con zona */
-                date_to?: string | null;
                 /** @description Página, desde 1 */
                 page?: number;
                 /** @description Registros por página (máx. 200) */
                 page_size?: number;
+                entity?: string | null;
+                entity_id?: number | null;
+                user_id?: number | null;
+                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
+                /** @description Desde este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_from?: string | null;
+                /** @description Hasta este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_to?: string | null;
             };
             header?: never;
             path?: never;
@@ -2316,6 +3148,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_AuditEntryOut_"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_audit_api_v1_audit_export_xlsx_get: {
+        parameters: {
+            query?: {
+                entity?: string | null;
+                entity_id?: number | null;
+                user_id?: number | null;
+                action?: ("create" | "update" | "deactivate" | "activate" | "delete") | null;
+                /** @description Desde este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_from?: string | null;
+                /** @description Hasta este día (incluido), YYYY-MM-DD en la zona de la planta */
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo .xlsx */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit_entities_api_v1_audit_entities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntityOption"][];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit_users_api_v1_audit_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditUserOption"][];
                 };
             };
             /** @description Error de validación */
@@ -7262,6 +8217,862 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_plans_api_v1_plants__plant_id__daily_plans_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanDayOut"][];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_plan_by_date_api_v1_plants__plant_id__daily_plans__productive_date__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+                /** @description Fecha productiva YYYY-MM-DD */
+                productive_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Sin plan, o Borrador sin permiso de edición */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_plan_api_v1_plants__plant_id__daily_plans__productive_date__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+                /** @description Fecha productiva YYYY-MM-DD */
+                productive_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DailyPlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Ya existe un plan para esa fecha */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_plan_api_v1_daily_plans__plan_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Sin plan, o Borrador sin permiso de edición */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_summary_api_v1_daily_plans__plan_id__summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanSummaryOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    add_entry_api_v1_daily_plans__plan_id__harvest_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HarvestEntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarvestEntryResult"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reorder_entries_api_v1_daily_plans__plan_id__harvest_entries_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HarvestOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_entry_api_v1_daily_plans__plan_id__harvest_entries__entry_id__delete: {
+        parameters: {
+            query: {
+                /** @description row_version leído de la línea */
+                row_version: string;
+            };
+            header?: never;
+            path: {
+                plan_id: number;
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarvestEntryResult"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_entry_api_v1_daily_plans__plan_id__harvest_entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HarvestEntryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarvestEntryResult"];
+                };
+            };
+            /** @description Otro usuario modificó la línea; details.current trae los datos vigentes */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publish_plan_api_v1_daily_plans__plan_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanTransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Otro usuario cambió el plan; details.current */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    change_plan_api_v1_daily_plans__plan_id__changes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanChangesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Otro usuario cambió el plan; details.current */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    close_plan_api_v1_daily_plans__plan_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanTransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyPlanDetailOut"];
+                };
+            };
+            /** @description Otro usuario cambió el plan; details.current */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_versions_api_v1_daily_plans__plan_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"][];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_versions_api_v1_daily_plans__plan_id__versions_compare_get: {
+        parameters: {
+            query: {
+                /** @description Versión base */
+                a: number;
+                /** @description Versión a comparar */
+                b: number;
+            };
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionCompareOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_version_api_v1_daily_plans__plan_id__versions__number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetailOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                /** @description Solo los no leídos */
+                unread_only?: boolean;
+                /** @description Página, desde 1 */
+                page?: number;
+                /** @description Registros por página (máx. 200) */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_NotificationOut_"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    notifications_summary_api_v1_notifications_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSummaryOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_all_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadAllOut"];
+                };
+            };
+            /** @description Error de validación */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error interno */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_one_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"];
                 };
             };
             /** @description Error de validación */
