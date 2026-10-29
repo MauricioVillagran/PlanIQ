@@ -23,6 +23,7 @@ from app.modules.daily_plans.schemas import (
     PlanChangesIn,
 )
 from app.modules.farms.models import Cage, FarmCenter, HoldingCage
+from app.modules.notifications.models import ChangeEvent, Notification
 from app.modules.plants.models import Plant
 from app.modules.shifts.models import Shift
 
@@ -124,6 +125,9 @@ def committed(engine: Engine) -> Iterator[Session]:
             plans = (
                 select(DailyPlan.id).join(Plant, Plant.id == DailyPlan.plant_id).where(Plant.code == "TMP")
             )
+            events = select(ChangeEvent.id).where(ChangeEvent.daily_plan_id.in_(plans))
+            session.execute(delete(Notification).where(Notification.change_event_id.in_(events)))
+            session.execute(delete(ChangeEvent).where(ChangeEvent.daily_plan_id.in_(plans)))
             session.execute(delete(DailyPlanVersion).where(DailyPlanVersion.daily_plan_id.in_(plans)))
             session.execute(delete(HarvestEntry).where(HarvestEntry.daily_plan_id.in_(plans)))
             session.execute(delete(DailyPlan).where(DailyPlan.id.in_(plans)))
