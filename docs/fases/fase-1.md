@@ -137,7 +137,10 @@ Plan original:
 - `GET /notifications`, `POST /notifications/{id}/read` y `/read-all`.
 - La campana muestra el contador con polling (intervalo por parámetro) y la lista con enlace al plan.
 
-### F1.7 · Pantalla del plan — `feature/f1-plan-web`
+### F1.7 · Pantalla del plan — `feature/f1-plan-web` (hecho)
+- Entregado: **Planificación › Plan de cosecha** (`/plan`): totales del día, por turno y por centro (en vivo, también con cambios sin guardar), alertas, grilla en escritorio con arrastrar y subir/bajar, tarjetas por centro en celular, crear vacío o copiando el día anterior, publicar, modificar un plan publicado acumulando cambios y guardándolos con motivo, cerrar, historial y comparador de versiones. Vista semanal (`/plan/week`) e Inicio con el plan de hoy y mañana. El seed de desarrollo crea parámetros ficticios y planes de ayer (cerrado), hoy (publicado, versión 2) y mañana (Borrador).
+
+Plan original:
 - **Planificación › Plan de cosecha** de la fecha y planta del contexto:
   - escritorio: grilla editable con totales fijos arriba;
   - celular: tarjetas agrupadas por centro;

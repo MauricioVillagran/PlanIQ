@@ -1,4 +1,4 @@
-import { Home, Settings, UserRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, Home, Settings, UserRound, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -11,6 +11,7 @@ export type NavItem = {
 /** Cada fase agrega aquí sus módulos (Planificación en la Fase 1...). */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Inicio", icon: Home },
+  { href: "/plan", label: "Planificación", icon: CalendarDays, anyPermission: ["plan.view"] },
   { href: "/settings", label: "Configuración", icon: Settings, anyPermission: ["masters.view", "users.admin", "audit.view"] },
   { href: "/profile", label: "Perfil", icon: UserRound },
 ];

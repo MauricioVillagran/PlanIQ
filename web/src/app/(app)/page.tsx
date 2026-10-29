@@ -4,15 +4,36 @@ import { CalendarDays, Factory } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Badge, EmptyState } from "@/components/ui/feedback";
+import { Badge, EmptyState, Skeleton } from "@/components/ui/feedback";
+import { PlanDayCard, usePlanDays } from "@/features/plan/week-page";
 import { useAppContext } from "@/lib/app-context";
 import { useAuth } from "@/lib/auth/auth-context";
 import { weekdayLabel } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 
-/** Inicio. En la Fase 1 muestra el plan de hoy y mañana según el rol; por ahora, el acceso del usuario. */
+function PlanDays({ plantId, date }: { plantId: number; date: string }) {
+  const { href } = useAppContext();
+  const days = usePlanDays(plantId, date, 2);
+  const linkFor = (day: string) => {
+    const url = new URL(href("/plan"), "http://x");
+    url.searchParams.set("date", day);
+    return `${url.pathname}?${url.searchParams.toString()}`;
+  };
+  if (days.isPending) return <Skeleton className="m-4 h-32" />;
+  return (
+    <ul className="space-y-2 p-3 sm:p-4">
+      {days.data?.map((day) => (
+        <li key={day.productive_date}>
+          <PlanDayCard day={day} href={linkFor(day.productive_date)} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Inicio: el plan de hoy y mañana de la planta del contexto, y el acceso del usuario. */
 export default function HomePage() {
-  const { me } = useAuth();
+  const { me, can } = useAuth();
   const { plant, date } = useAppContext();
   if (!me) return null;
 
@@ -26,12 +47,16 @@ export default function HomePage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Plan del día" description={`Fecha productiva ${formatDate(date)}`} />
-          <EmptyState
-            icon={CalendarDays}
-            title="El plan diario se habilita en la Fase 1"
-            description="Aquí verá la cosecha planificada, sus totales por turno y las alertas del día."
-          />
+          <CardHeader title="Plan de cosecha" description="Hoy y mañana, con sus alertas" />
+          {can("plan.view") && plant ? (
+            <PlanDays plantId={plant.id} date={date} />
+          ) : (
+            <EmptyState
+              icon={CalendarDays}
+              title={plant ? "Sin acceso al plan" : "Elija una planta"}
+              description="El plan de cosecha se ve con el permiso de plan y una planta asignada."
+            />
+          )}
         </Card>
 
         <Card>
